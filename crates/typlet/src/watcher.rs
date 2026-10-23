@@ -90,6 +90,7 @@ impl State {
                 None => rx.recv().map_err(|_| RecvTimeoutError::Disconnected),
             };
             match message {
+                Ok(Message::Fs(Ok(event))) if !is_change(&event) => {}
                 Ok(Message::Fs(Ok(event))) => {
                     let due = Instant::now() + SETTLE;
                     for path in &event.paths {
@@ -120,6 +121,12 @@ impl State {
             }
         }
     }
+}
+
+/// Only real changes count. Reading files (including Typlet's own reloads)
+/// produces access events; reacting to them would reload forever.
+fn is_change(event: &notify::Event) -> bool {
+    !event.kind.is_access() && !event.kind.is_other()
 }
 
 fn watch_library(watcher: &mut RecommendedWatcher, old: Option<&Path>, new: &Path) {
@@ -155,5 +162,21 @@ mod tests {
             rx.recv_timeout(Duration::from_secs(5)),
             Ok(Change::Settings)
         );
+    }
+
+    #[test]
+    fn reading_files_is_not_a_change() {
+        // Regression: reloading read the files, which reported access
+        // events, which triggered the next reload, forever.
+        use notify::event::{AccessKind, AccessMode, CreateKind, EventKind};
+        let event = notify::Event::new;
+        assert!(!is_change(&event(EventKind::Access(AccessKind::Open(
+            AccessMode::Read
+        )))));
+        assert!(!is_change(&event(EventKind::Access(AccessKind::Close(
+            AccessMode::Read
+        )))));
+        assert!(is_change(&event(EventKind::Create(CreateKind::File))));
+        assert!(is_change(&event(EventKind::Any)));
     }
 }
