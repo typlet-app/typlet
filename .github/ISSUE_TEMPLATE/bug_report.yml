@@ -1,0 +1,56 @@
+name: 🐛 Bug report
+description: Something does not work as expected
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! You may write in English or German.
+        **Security problems must not be reported here**; see SECURITY.md.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you type, what did you expect and what happened instead?
+      placeholder: "I typed :sig in Outlook and the line breaks were missing."
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Application
+      description: Where did it happen? Include the version if you know it.
+      placeholder: "Outlook (new), Chrome 140 with Gmail, Teams …"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - Linux (Wayland)
+        - Linux (X11)
+        - macOS
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Typlet version
+      placeholder: "0.1.0 or commit hash"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+  - type: textarea
+    id: snippet
+    attributes:
+      label: Snippet file (optional)
+      description: If a specific snippet is affected, paste its JSON. Remove anything private first.
+      render: json

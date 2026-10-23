@@ -1,0 +1,23 @@
+name: 💡 Feature request
+description: Suggest an idea or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for the idea! You may write in English or German.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation, not the solution yet.
+      placeholder: "I often fill in the same order form and have to copy values one by one."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: How could Typlet help?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds you use today
