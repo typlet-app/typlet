@@ -3,7 +3,7 @@
 //! and the tray icon, and talks to the engine thread with commands.
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -11,8 +11,8 @@ use crossbeam_channel::Sender;
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use typlet_core::snippet::validate_trigger;
 use typlet_core::{
-    DateLanguage, Document, FieldKind as CoreFieldKind, Language, Library, RenderContext, Settings,
-    Snippet, SnippetId, ValidationError, render,
+    DateLanguage, Document, FieldKind as CoreFieldKind, Hotkey, Language, Library, RenderContext,
+    Settings, Snippet, SnippetId, ValidationError, render,
 };
 use typlet_platform::paths::Paths;
 use typlet_platform::{Platform, autostart};
@@ -100,6 +100,8 @@ pub(crate) struct App {
     settings_error_shown: Cell<bool>,
     quiet: Cell<bool>,
     test_expected: RefCell<String>,
+    /// Shortcuts already reported as used by another program.
+    taken_hotkeys: RefCell<HashSet<Hotkey>>,
 }
 
 /// Loads the settings; a broken file falls back to the defaults.
@@ -249,6 +251,7 @@ pub(crate) fn run(paths: Paths, options: StartOptions) -> Result<(), Box<dyn std
         settings_error_shown: Cell::new(false),
         quiet: Cell::new(false),
         test_expected: RefCell::new(String::new()),
+        taken_hotkeys: RefCell::new(HashSet::new()),
     });
     APP.with(|cell| *cell.borrow_mut() = Some(Rc::clone(&app)));
 
@@ -487,6 +490,7 @@ impl App {
         message.on_primary_action(with(|app| match app.message_kind.get() {
             MessageKind::InputFailed => app.show_setup(),
             MessageKind::InsertFailed | MessageKind::LibraryProblem => app.show_diagnostics(),
+            MessageKind::HotkeyTaken => app.open_editor(&["--settings"]),
             _ => {}
         }));
     }
@@ -523,6 +527,14 @@ impl App {
                 }
             }
             Notice::Diagnostics(history) => self.fill_diagnostics(&history),
+            Notice::HotkeyTaken(hotkey) => {
+                // Once per shortcut and session; the engine reports it again
+                // whenever the snippets or settings are reloaded.
+                if self.taken_hotkeys.borrow_mut().insert(hotkey) {
+                    let label = self.shortcut_label(hotkey);
+                    self.show_message(MessageKind::HotkeyTaken, &label);
+                }
+            }
         }
     }
 
@@ -601,14 +613,17 @@ impl App {
     }
 
     fn hotkey_label(&self) -> String {
-        let settings = self.settings.borrow();
-        settings.search_hotkey.map_or_else(String::new, |hotkey| {
-            if is_german(&settings) {
-                hotkey.german_label()
-            } else {
-                hotkey.to_string()
-            }
-        })
+        let search = self.settings.borrow().search_hotkey;
+        search.map_or_else(String::new, |hotkey| self.shortcut_label(hotkey))
+    }
+
+    /// A shortcut as the user reads it (`Strg+Umschalt+Leertaste`).
+    fn shortcut_label(&self, hotkey: Hotkey) -> String {
+        if self.german() {
+            hotkey.german_label()
+        } else {
+            hotkey.to_string()
+        }
     }
 
     fn refresh_tray(&self) {

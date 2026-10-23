@@ -91,7 +91,7 @@ Press **Save** (or **Ctrl+S**). The background program picks up the change at on
 
 ### Settings
 
-**Settings** (bottom left) holds the language, start with the computer, messages, the keyboard shortcuts, the snippet folder (choose a synced folder such as OneDrive to use your snippets on several computers) and **app rules**: switch Typlet off in a program, or change how it inserts text there.
+**Settings** (bottom left) holds the language, start with the computer, messages, the keyboard shortcuts, the snippet folder (choose a synced folder such as OneDrive to use your snippets on several computers) and **app rules**: switch Typlet off in a program, or change how it inserts text there. If another program already uses one of your keyboard shortcuts, Typlet tells you so; choose a different one here.
 
 ![Settings](images/en/editor-settings.png)
 

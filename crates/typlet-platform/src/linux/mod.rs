@@ -174,7 +174,6 @@ impl Backend {
     pub(crate) fn arm_undo(&self, _armed: bool) {
         // evdev cannot keep a key press from reaching the application, so the
         // engine always sees `suppressed: false` on Linux.
-        self.controls.arm_undo(false);
     }
 
     pub(crate) fn remember_focus(&mut self) {}
