@@ -1,6 +1,6 @@
 name: Test builds
 
-# Builds the background program for Windows and Linux so changes can be tried
+# Builds the background program and the editor for Windows and Linux so changes can be tried
 # on real machines before a release. Download the files from the "Artifacts"
 # section of a workflow run. The builds are unsigned (see docs/adr/0008).
 
@@ -49,21 +49,32 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libxkbcommon-dev libfontconfig1-dev libwayland-dev
+          sudo apt-get install -y --no-install-recommends libxkbcommon-dev libfontconfig1-dev libwayland-dev libwebkit2gtk-4.1-dev libdbus-1-dev
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: crates/typlet-editor/web/package-lock.json
+      - name: Build the editor interface
+        working-directory: crates/typlet-editor/web
+        run: |
+          npm ci
+          npm run build
       - name: Build
-        run: cargo build --release --locked -p typlet
+        # `custom-protocol` embeds the built interface into the editor.
+        run: cargo build --release --locked -p typlet -p typlet-editor --features typlet-editor/custom-protocol
       - name: Collect files (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
           mkdir dist
-          cp target/release/typlet.exe dist/
+          cp target/release/typlet.exe target/release/typlet-editor.exe dist/
           cp LICENSE docs/testing/test-build.md dist/
       - name: Collect files (Linux)
         if: runner.os == 'Linux'
         run: |
           mkdir dist
-          cp target/release/typlet dist/
+          cp target/release/typlet target/release/typlet-editor dist/
           cp LICENSE docs/testing/test-build.md packaging/linux/60-typlet-uinput.rules dist/
       - uses: actions/upload-artifact@v7
         with:

@@ -17,8 +17,9 @@ env:
   CARGO_TERM_COLOR: always
   # Keep in sync with rust-toolchain.toml.
   RUST_TOOLCHAIN: "1.97.0"
-  # Libraries the Linux build links against (keyboard layouts, fonts, Wayland).
-  LINUX_BUILD_DEPS: libxkbcommon-dev libfontconfig1-dev libwayland-dev
+  # Libraries the Linux build links against: keyboard layouts, fonts and
+  # Wayland (background program), WebKitGTK and D-Bus (editor).
+  LINUX_BUILD_DEPS: libxkbcommon-dev libfontconfig1-dev libwayland-dev libwebkit2gtk-4.1-dev libdbus-1-dev
 
 jobs:
   fmt:
@@ -71,6 +72,27 @@ jobs:
       - name: Install Linux build dependencies
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_BUILD_DEPS
       - run: cargo doc --workspace --no-deps --locked
+
+  editor-web:
+    name: Editor interface
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/typlet-editor/web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: crates/typlet-editor/web/package-lock.json
+      - run: npm ci
+      - name: Type check
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build
 
   deny:
     name: Licences and advisories
