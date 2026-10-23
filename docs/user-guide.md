@@ -113,6 +113,7 @@ Press **Save** (or **Ctrl+S**). The background program picks up the change at on
 | Set up and test… | Opens the set-up assistant again |
 | Diagnostics… | Shows what Typlet sees and what happened recently |
 | Help | Opens this guide |
+| Support Typlet ❤️ | Opens the donation page |
 | Quit Typlet | Ends Typlet until you start it again |
 
 ## Something does not work?
@@ -158,3 +159,7 @@ The only time Typlet goes online is the daily update check, which the editor doe
 | Settings | `%APPDATA%\Typlet\config\settings.json` | `~/.config/typlet/settings.json` |
 
 Each snippet is one small file. Back up the snippets folder to keep your snippets safe.
+
+## Supporting Typlet
+
+Typlet is free, has no ads and collects no data. It is funded by donations. If it saves you time, you can support its development on [Ko-fi](https://ko-fi.com/finnbach): via **Support Typlet ❤️** in the tray menu or in the editor's settings. Testing, reporting problems and telling others about Typlet help just as much.

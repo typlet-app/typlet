@@ -18,6 +18,7 @@ export component TrayIcon inherits SystemTrayIcon {
     callback setup();
     callback diagnostics();
     callback help();
+    callback donate();
     callback quit();
 
     icon: root.paused ? @image-url("images/tray-paused.png") : @image-url("images/tray.png");
@@ -103,6 +104,13 @@ export component TrayIcon inherits SystemTrayIcon {
             title: @tr("Help");
             activated => {
                 root.help();
+            }
+        }
+
+        MenuItem {
+            title: @tr("Support Typlet ❤️");
+            activated => {
+                root.donate();
             }
         }
 

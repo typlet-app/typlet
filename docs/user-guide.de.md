@@ -113,6 +113,7 @@ Klicke auf **Speichern** (oder **Strg+S**). Das Hintergrundprogramm übernimmt d
 | Einrichten und testen … | Öffnet den Einrichtungsassistenten erneut |
 | Diagnose … | Zeigt, was Typlet sieht und was zuletzt passiert ist |
 | Hilfe | Öffnet diese Anleitung |
+| Typlet unterstützen ❤️ | Öffnet die Seite für Spenden |
 | Typlet beenden | Beendet Typlet, bis du es wieder startest |
 
 ## Etwas funktioniert nicht?
@@ -158,3 +159,7 @@ Online geht Typlet nur für die tägliche Suche nach Updates, und die übernimmt
 | Einstellungen | `%APPDATA%\Typlet\config\settings.json` | `~/.config/typlet/settings.json` |
 
 Jeder Textbaustein ist eine kleine Datei. Sichere den Ordner mit den Textbausteinen, um sie zu behalten.
+
+## Typlet unterstützen
+
+Typlet ist kostenlos, zeigt keine Werbung und sammelt keine Daten. Es wird durch Spenden finanziert. Wenn es dir Zeit spart, kannst du die Weiterentwicklung auf [Ko-fi](https://ko-fi.com/finnbach) unterstützen: über **Typlet unterstützen ❤️** im Menü im Infobereich oder in den Einstellungen des Editors. Testen, Probleme melden und anderen von Typlet erzählen hilft genauso.

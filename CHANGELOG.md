@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Donations: "Support Typlet ❤️" in the tray menu, an "About Typlet" section in the editor's settings and a small link on the editor's start page open Typlet's [Ko-fi page](https://ko-fi.com/finnbach); `.github/FUNDING.yml` shows GitHub's sponsor button. Typlet's web addresses live in one place (`typlet_core::links`).
 - Automatic updates: the editor checks GitHub once a day (the background program stays offline), the tray menu and a one-time message offer the new version, and the editor's update page installs it with one click and restarts Typlet. Updates are signed including their version; the release workflow publishes `latest.json` (ADR 0015). The daily check can be switched off in the settings.
 - Installers (milestone M5): Windows NSIS installer per user without admin rights, Debian package with udev rule and `input` group set-up, AppImage; built by the new release workflow from version tags as draft releases with checksums, with an install/uninstall smoke test on every build; code-signing step prepared for SignPath (ADR 0013, docs/releasing.md).
 - The editor accepts `--autostart`/`--background` to start only the background program (used by the AppImage at login).

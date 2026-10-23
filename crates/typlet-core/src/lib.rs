@@ -15,6 +15,7 @@
 //! * [`settings`]: user settings and per-application rules
 //! * [`hotkey`]: keyboard shortcuts
 //! * [`update`]: what is known about new versions
+//! * [`links`]: Typlet's web addresses (user guide, releases, donations)
 //!
 //! Platform crates feed keystrokes into a [`matcher::Matcher`], render the
 //! matched [`snippet::Snippet`] with [`render::render`], turn the result into
@@ -26,6 +27,7 @@ pub mod document;
 pub mod fsutil;
 pub mod hotkey;
 pub mod library;
+pub mod links;
 pub mod matcher;
 pub mod plan;
 pub mod render;

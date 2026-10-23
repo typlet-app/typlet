@@ -54,6 +54,9 @@ msgstr "Diagnose …"
 msgid "Help"
 msgstr "Hilfe"
 
+msgid "Support Typlet ❤️"
+msgstr "Typlet unterstützen ❤️"
+
 msgid "Quit Typlet"
 msgstr "Typlet beenden"
 
