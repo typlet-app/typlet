@@ -17,6 +17,7 @@
 //! * [`hotkey`]: keyboard shortcuts
 //! * [`update`]: what is known about new versions
 //! * [`links`]: Typlet's web addresses (user guide, releases, donations)
+//! * [`stats`]: local usage statistics, streaks and milestones
 //!
 //! Platform crates feed keystrokes into a [`matcher::Matcher`], render the
 //! matched [`snippet::Snippet`] with [`render::render`], turn the result into
@@ -36,6 +37,7 @@ pub mod render;
 pub mod search;
 pub mod settings;
 pub mod snippet;
+pub mod stats;
 pub mod update;
 
 pub use document::{Block, Document, Inline, Marks};

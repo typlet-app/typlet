@@ -2,7 +2,7 @@
 // Typed wrappers around the editor's Rust commands (src/commands.rs).
 
 import { invoke } from "@tauri-apps/api/core";
-import type { AppInfo, ImportSummary, LibraryView, Preview, Settings, Snippet, UpdateView } from "./types";
+import type { AppInfo, ImportSummary, LibraryView, Preview, Settings, Snippet, StatsView, UpdateView } from "./types";
 
 export const api = {
   appInfo: () => invoke<AppInfo>("app_info"),
@@ -24,6 +24,8 @@ export const api = {
   updateStatus: () => invoke<UpdateView>("update_status"),
   checkForUpdate: () => invoke<UpdateView>("check_for_update"),
   installUpdate: () => invoke<void>("install_update"),
+  loadStats: () => invoke<StatsView>("load_stats"),
+  resetStats: () => invoke<void>("reset_stats"),
 };
 
 /** Error text from a failed command. */

@@ -97,6 +97,8 @@ export interface Settings {
   library_path?: string | null;
   app_rules: AppRule[];
   check_for_updates: boolean;
+  /** Count inserted snippets for the statistics (numbers only). */
+  statistics: boolean;
 }
 
 export interface Preview {
@@ -139,6 +141,7 @@ export interface AppInfo {
   open_snippet: string | null;
   open_settings: boolean;
   open_update: boolean;
+  open_stats: boolean;
   system_german: boolean;
   background_running: boolean;
 }
@@ -149,4 +152,31 @@ export interface UpdateView {
   available: { version: string; notes?: string; date?: string } | null;
   checked_at: string | null;
   can_install: boolean;
+}
+
+/** Something worth celebrating (typlet_core::stats::Milestone). */
+export type Milestone =
+  | { kind: "insertions"; value: number }
+  | { kind: "hours_saved"; value: number }
+  | { kind: "streak"; value: number };
+
+export interface DayCount {
+  /** `YYYY-MM-DD` */
+  date: string;
+  count: number;
+}
+
+/** The statistics page (src/stats.rs). Numbers only, never text. */
+export interface StatsView {
+  enabled: boolean;
+  today: string;
+  since: string | null;
+  insertions: number;
+  characters_saved: number;
+  minutes_saved: number;
+  streak: number;
+  best_streak: number;
+  days: DayCount[];
+  top: { id: string; trigger: string | null; label: string | null; count: number; last_used: string }[];
+  milestones: { milestone: Milestone; reached: boolean }[];
 }

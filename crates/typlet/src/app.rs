@@ -13,6 +13,7 @@ use crossbeam_channel::Sender;
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use typlet_core::links;
 use typlet_core::snippet::validate_trigger;
+use typlet_core::stats::{Milestone, Stats};
 use typlet_core::{
     DateLanguage, Document, FieldKind as CoreFieldKind, Hotkey, Language, Library, RenderContext,
     Settings, Snippet, SnippetId, UpdateState, ValidationError, nesting, render,
@@ -115,6 +116,17 @@ pub(crate) struct App {
     /// Starts the daily update check.
     update_timer: slint::Timer,
     update_check_running: Cell<bool>,
+}
+
+/// How the tray menu shows a milestone: a kind (1 insertions, 2 hours
+/// saved, 3 streak) and its number.
+fn milestone_display(milestone: Milestone) -> (i32, i32) {
+    let clamp = |value: u64| i32::try_from(value).unwrap_or(i32::MAX);
+    match milestone {
+        Milestone::Insertions(count) => (1, clamp(count)),
+        Milestone::HoursSaved(hours) => (2, clamp(hours)),
+        Milestone::Streak(days) => (3, clamp(u64::from(days))),
+    }
 }
 
 /// Loads the settings; a broken file falls back to the defaults.
@@ -377,6 +389,10 @@ impl App {
         tray.on_new_snippet(with(|app| app.show_create(String::new())));
         tray.on_open_editor(with(|app| app.open_editor(&[])));
         tray.on_install_update(with(|app| app.open_editor(&["--update"])));
+        tray.on_open_stats(with(|app| {
+            app.windows.tray.set_milestone_kind(0);
+            app.open_editor(&["--stats"]);
+        }));
         tray.on_open_folder(with(|app| os::open_folder(&app.library.borrow().root)));
         tray.on_toggle_pause(with(|app| {
             app.update_settings(|settings| settings.paused = !settings.paused);
@@ -566,6 +582,38 @@ impl App {
                     self.show_message(MessageKind::HotkeyTaken, &label);
                 }
             }
+            Notice::Inserted { snippet, saved } => self.count_insertion(snippet, saved, true),
+            Notice::Undone { snippet, saved } => self.count_insertion(snippet, saved, false),
+        }
+    }
+
+    // ----- statistics -----------------------------------------------------
+
+    /// Counts (or, after an undo, takes back) an insertion in the local
+    /// statistics. The file holds numbers only ([`Stats`]). It is read
+    /// before every change, so the editor can reset it at any time.
+    fn count_insertion(&self, snippet: SnippetId, saved: u64, inserted: bool) {
+        if !self.settings.borrow().statistics {
+            return;
+        }
+        let today = chrono::Local::now().date_naive();
+        let mut stats = Stats::load(&self.paths.stats);
+        let reached = if inserted {
+            stats.record(snippet, saved, today)
+        } else {
+            stats.unrecord(snippet, saved, today);
+            Vec::new()
+        };
+        if let Err(error) = stats.save(&self.paths.stats) {
+            log::warn!("cannot save the statistics: {error}");
+        }
+        // Celebrated quietly in the tray menu, never with a window that
+        // could catch what the user is typing.
+        if let Some(&milestone) = reached.last() {
+            let (kind, value) = milestone_display(milestone);
+            let tray = &self.windows.tray;
+            tray.set_milestone_kind(kind);
+            tray.set_milestone_value(value);
         }
     }
 

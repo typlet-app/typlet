@@ -62,6 +62,7 @@ The [user guide](docs/user-guide.md#installing) ([Deutsch](docs/user-guide.de.md
 | Fill-in forms | Config syntax | 🧾 Fields, dropdowns and yes/no, built visually |
 | Reusing parts | Nested variables in a config file | 🧩 Insert one snippet into another with a click |
 | Setup | Manual | 🧭 Guided assistant with a test field |
+| Seeing the benefit | Nothing | 📊 Time saved, streaks and milestones |
 | Privacy | Varies | 🔒 Local only, no network in the keystroke process |
 
 ## ✨ Features
@@ -87,6 +88,7 @@ The [user guide](docs/user-guide.md#installing) ([Deutsch](docs/user-guide.de.md
 | 🌍 English and German interface | ✅ |
 | ✍️ Visual snippet editor: formatting, placeholder chips, forms, live preview | ✅ |
 | 🧩 Snippets inside snippets: write a signature once, use it everywhere | ✅ |
+| 📊 Statistics: time saved, streaks, most used snippets, milestones (local, numbers only) | ✅ |
 | ⚙️ Settings and app rules in the editor | ✅ |
 | 📥 Import from espanso | ✅ |
 | 📦 Installers: Windows (per user), Debian package, AppImage | ✅ |
@@ -106,6 +108,8 @@ See the [roadmap](docs/roadmap.md) for milestones and what comes after V1 (macOS
 | <img src="docs/images/en/search.png" width="420" alt="Quick search listing three snippets with their triggers"> | <img src="docs/images/en/form.png" width="340" alt="Form asking who called, the topic and whether to call back"> |
 | **Set-up assistant** | **New snippet from selection** (`Ctrl+Alt+S`) |
 | <img src="docs/images/en/setup-welcome.png" width="420" alt="Welcome page of the set-up assistant with example snippets"> | <img src="docs/images/en/new-snippet.png" width="340" alt="Window to save selected text as a snippet with a trigger"> |
+| **Statistics** | **Snippets inside snippets** |
+| <img src="docs/images/en/editor-stats.png" width="420" alt="Statistics page: snippets inserted, time saved, streak, activity chart and most used snippets"> | <img src="docs/images/en/editor-nested.png" width="420" alt="A thanks snippet that includes the e-mail signature as a green chip"> |
 
 The interface is available in English and German ([German screenshots](docs/images/de)).
 
@@ -178,7 +182,7 @@ Testing on your favourite apps, reporting problems and telling others about Typl
 A text expander has to see what you type. These rules are built into Typlet:
 
 - Only the last few characters are kept in memory, just enough to recognise an abbreviation ([matcher](crates/typlet-core/src/matcher.rs)).
-- Nothing you type or insert is ever written to disk or logged; diagnostics record app names and outcomes only.
+- Nothing you type or insert is ever written to disk or logged; diagnostics record app names and outcomes only, and the statistics hold numbers only ([ADR 0017](docs/adr/0017-local-statistics.md)).
 - The background program that sees your keystrokes has no network code. Only the editor goes online, once a day, to ask GitHub for a new version; updates are signed ([ADR 0015](docs/adr/0015-automatic-updates.md)).
 - Typlet pauses automatically in password fields (Windows; GNOME does not expose them yet).
 - Text Typlet puts on the clipboard stays out of the Windows clipboard history and cloud sync.

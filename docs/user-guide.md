@@ -103,7 +103,7 @@ Write recurring parts such as your signature or your address once and insert the
 
 ### Settings
 
-**Settings** (bottom left) holds the language, start with the computer, messages, the keyboard shortcuts, the snippet folder (choose a synced folder such as OneDrive to use your snippets on several computers) and **app rules**: switch Typlet off in a program, or change how it inserts text there. If another program already uses one of your keyboard shortcuts, Typlet tells you so; choose a different one here.
+**Settings** (bottom left) holds the language, start with the computer, messages, counting for the statistics, the keyboard shortcuts, the snippet folder (choose a synced folder such as OneDrive to use your snippets on several computers) and **app rules**: switch Typlet off in a program, or change how it inserts text there. If another program already uses one of your keyboard shortcuts, Typlet tells you so; choose a different one here.
 
 ![Settings](images/en/editor-settings.png)
 
@@ -116,6 +116,7 @@ Write recurring parts such as your signature or your address once and insert the
 | Entry | What it does |
 |---|---|
 | Install update … | Appears when a new version is available; installs it |
+| 🎉 … – see your statistics | Appears when you reach a milestone; opens your statistics |
 | Search snippets… | Opens the quick search |
 | New snippet… | Creates a snippet from text you type or paste |
 | Open editor | Opens the editor |
@@ -149,6 +150,14 @@ Common causes:
 
 When you report a problem, use **Copy report** in Diagnostics and paste it into a [GitHub issue](https://github.com/typlet-app/typlet/issues). The report never contains anything you typed.
 
+## Statistics
+
+**📊 Statistics** in the editor (bottom left) shows what Typlet does for you: how many snippets it inserted, how much typing that saved, your streak of days in a row, an activity chart of the last half year, your most used snippets and milestones such as *100 snippets inserted* or *10 hours of typing saved*. When you reach a milestone, a 🎉 entry appears in the tray menu – Typlet never interrupts your typing for it.
+
+![Statistics](images/en/editor-stats.png)
+
+The time saved is an estimate at 200 characters per minute, an average typing speed; what you type for a snippet (its trigger and form answers) is subtracted. Typlet stores **only numbers** on your computer, never what you type. You can reset the statistics at the bottom of the page or switch counting off in the settings.
+
 ## Updates
 
 Typlet looks for a new version once a day. When there is one, the tray menu shows **Install update …** and a message asks once whether to install it now. Installing takes about a minute; Typlet restarts afterwards, and your snippets and settings stay as they are. On Ubuntu and Debian you may be asked for your password.
@@ -161,7 +170,7 @@ To look yourself, open the editor's **Settings** and click **Check now**. You ca
 
 Typlet has to see what you type to recognise triggers. It keeps only the last few characters in memory, never saves or logs what you type, has no internet access in the background program and pauses in password fields.
 
-The only time Typlet goes online is the daily update check, which the editor does: it asks GitHub for the newest version. Like any web request, this shows GitHub your IP address. Your snippets and what you type never leave your computer.
+The only time Typlet goes online is the daily update check, which the editor does: it asks GitHub for the newest version. Like any web request, this shows GitHub your IP address. Your snippets and what you type never leave your computer. The statistics hold only numbers and stay on your computer too.
 
 ## Where your data lives
 

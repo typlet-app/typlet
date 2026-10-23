@@ -9,13 +9,14 @@ import type { LoadedSnippet } from "../types";
 interface Props {
   snippets: LoadedSnippet[];
   selectedId: string | null;
-  page: "snippet" | "settings" | "import" | "home" | "update";
+  page: "snippet" | "settings" | "import" | "home" | "update" | "stats";
   conflicted: Set<string>;
   backgroundRunning: boolean;
   onSelect: (id: string) => void;
   onNew: () => void;
   onSettings: () => void;
   onImport: () => void;
+  onStats: () => void;
   onStartBackground: () => void;
 }
 
@@ -88,6 +89,9 @@ export function Sidebar(props: Props) {
         ))}
       </nav>
       <footer className="sidebar-footer">
+        <button type="button" className={`nav${props.page === "stats" ? " is-selected" : ""}`} onClick={props.onStats}>
+          📊 {t("stats")}
+        </button>
         <button type="button" className={`nav${props.page === "settings" ? " is-selected" : ""}`} onClick={props.onSettings}>
           ⚙ {t("settings")}
         </button>

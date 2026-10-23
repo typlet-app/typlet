@@ -8,15 +8,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, errorText } from "./api";
 import { ImportPage } from "./components/ImportPage";
 import { SettingsPage } from "./components/SettingsPage";
+import { StatsPage } from "./components/StatsPage";
 import { Sidebar } from "./components/Sidebar";
 import { UpdatePage } from "./components/UpdatePage";
 import { normalised, SnippetEditor, type Draft } from "./editor/SnippetEditor";
-import { LangContext, translate, type Key, type Lang } from "./i18n";
+import { LangContext, translate, useLang, type Key, type Lang } from "./i18n";
 import { usersOf } from "./nesting";
-import type { AppInfo, LibraryView, Settings, UpdateView } from "./types";
+import { duration } from "./stats";
+import type { AppInfo, LibraryView, Settings, StatsView, UpdateView } from "./types";
 import { uuidv7 } from "./uuid";
 
-type Page = "home" | "snippet" | "settings" | "import" | "update";
+type Page = "home" | "snippet" | "settings" | "import" | "update" | "stats";
 
 const DEFAULT_SETTINGS: Settings = {
   version: 1,
@@ -29,6 +31,7 @@ const DEFAULT_SETTINGS: Settings = {
   selection_hotkey: "Ctrl+Alt+S",
   app_rules: [],
   check_for_updates: true,
+  statistics: true,
 };
 
 const snapshot = (draft: Draft | null) => (draft ? JSON.stringify([normalised(draft.snippet), draft.category]) : "");
@@ -44,6 +47,7 @@ export function App() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [update, setUpdate] = useState<UpdateView | null>(null);
+  const [stats, setStats] = useState<StatsView | null>(null);
 
   const lang: Lang =
     settings.language === "system" ? (info?.system_german ? "de" : "en") : settings.language;
@@ -95,6 +99,8 @@ export function App() {
       api.updateStatus().then(setUpdate, () => undefined);
       if (appInfo.open_update) {
         setPage("update");
+      } else if (appInfo.open_stats) {
+        setPage("stats");
       } else if (appInfo.open_snippet) {
         const found = view.snippets.find((s) => s.snippet.id === appInfo.open_snippet);
         if (found) {
@@ -119,7 +125,9 @@ export function App() {
     });
     const offSettings = listen("open-settings", () => setPage("settings"));
     const offUpdate = listen("open-update", () => setPage("update"));
+    const offStats = listen("open-stats", () => setPage("stats"));
     return () => {
+      void offStats.then((off) => off());
       void offSnippet.then((off) => off());
       void offSettings.then((off) => off());
       void offUpdate.then((off) => off());
@@ -128,6 +136,11 @@ export function App() {
 
   const pageRef = useRef(page);
   pageRef.current = page;
+
+  // The start page mentions how much typing Typlet saved.
+  useEffect(() => {
+    if (page === "home") api.loadStats().then(setStats, () => setStats(null));
+  }, [page]);
 
   // Pick up changes made elsewhere: snippets created from a selection,
   // pausing in the tray menu. Settings being edited are left alone.
@@ -273,6 +286,7 @@ export function App() {
           onNew={() => void newSnippet()}
           onSettings={() => void switchPage("settings")}
           onImport={() => void switchPage("import")}
+          onStats={() => void switchPage("stats")}
           onStartBackground={() => void api.startBackground().then(() => window.setTimeout(() => void refreshInfo(), 1500))}
         />
         <main className="main">
@@ -302,6 +316,9 @@ export function App() {
             }} />
           )}
           {page === "update" && <UpdatePage onStatus={setUpdate} />}
+          {page === "stats" && (
+            <StatsPage onOpenSnippet={(id) => void openSnippet(id)} onSettings={() => void switchPage("settings")} />
+          )}
           {page === "import" && <ImportPage defaultDir={info?.default_espanso_dir ?? null} onImported={() => void reload()} />}
           {page === "home" && (
             <Home
@@ -309,6 +326,8 @@ export function App() {
               count={library?.snippets.length ?? 0}
               update={update?.available?.version ?? null}
               onUpdate={() => void switchPage("update")}
+              stats={stats}
+              onStats={() => void switchPage("stats")}
               errors={library?.errors ?? []}
               onNew={() => void newSnippet()}
               onImport={() => void switchPage("import")}
@@ -325,11 +344,14 @@ function Home(props: {
   count: number;
   update: string | null;
   onUpdate: () => void;
+  stats: StatsView | null;
+  onStats: () => void;
   errors: string[];
   onNew: () => void;
   onImport: () => void;
 }) {
   const { t } = props;
+  const lang = useLang();
   return (
     <div className="page home">
       {props.update && (
@@ -351,6 +373,17 @@ function Home(props: {
           {t("import_title")}
         </button>
       </div>
+      {props.stats && props.stats.insertions > 0 && (
+        <p className="home-stats">
+          {t("home_stats", {
+            count: props.stats.insertions.toLocaleString(lang),
+            time: duration(t, props.stats.minutes_saved),
+          })}{" "}
+          <button type="button" className="link-button" onClick={props.onStats}>
+            📊 {t("home_stats_link")}
+          </button>
+        </p>
+      )}
       <ul className="tips">
         <li>{t("tip_trigger")}</li>
         <li>{t("tip_placeholders")}</li>

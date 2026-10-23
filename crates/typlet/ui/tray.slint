@@ -7,11 +7,16 @@ export component TrayIcon inherits SystemTrayIcon {
     in property <string> search-shortcut;
     // A newer version found by the daily check, or empty.
     in property <string> update-version;
+    // A milestone just reached: 0 none, 1 snippets inserted, 2 hours of
+    // typing saved, 3 days in a row; and its number.
+    in property <int> milestone-kind;
+    in property <int> milestone-value;
 
     callback search();
     callback new-snippet();
     callback open-editor();
     callback install-update();
+    callback open-stats();
     callback open-folder();
     callback toggle-pause();
     callback toggle-autostart();
@@ -37,6 +42,18 @@ export component TrayIcon inherits SystemTrayIcon {
         }
 
         if root.update-version != "": MenuSeparator { }
+
+        if root.milestone-kind != 0: MenuItem {
+            title: root.milestone-kind == 1 ? @tr("🎉 {} snippets inserted – see your statistics", root.milestone-value)
+                : root.milestone-kind == 2 && root.milestone-value == 1 ? @tr("🎉 One hour of typing saved – see your statistics")
+                : root.milestone-kind == 2 ? @tr("🎉 {} hours of typing saved – see your statistics", root.milestone-value)
+                : @tr("🔥 {} days in a row – see your statistics", root.milestone-value);
+            activated => {
+                root.open-stats();
+            }
+        }
+
+        if root.milestone-kind != 0: MenuSeparator { }
 
         MenuItem {
             title: root.search-shortcut == "" ? @tr("Search snippets…") : @tr("Search snippets…  ({})", root.search-shortcut);

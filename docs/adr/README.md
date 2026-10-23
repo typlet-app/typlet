@@ -20,6 +20,7 @@ An ADR captures one significant decision: the context, what was decided and what
 | [0014](0014-raw-input-on-windows.md) | Raw Input and registered shortcuts on Windows | Accepted |
 | [0015](0015-automatic-updates.md) | Automatic updates through the editor | Accepted |
 | [0016](0016-snippets-inside-snippets.md) | Snippets inside snippets, referenced by id | Accepted |
+| [0017](0017-local-statistics.md) | Local usage statistics with milestones | Accepted |
 
 ## Writing a new ADR
 

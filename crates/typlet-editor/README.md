@@ -6,6 +6,7 @@ The editor of [Typlet](../../README.md): a window for creating and editing snipp
 |---|---|---|
 | Commands | `src/commands.rs` | All file access through `typlet-core`: load and save snippets by id, delete, validate, preview with the real renderer, settings, espanso import |
 | Window | `src/main.rs` | Single instance (a second start focuses the window and passes `--open <id>` / `--settings` / `--update`), starts the background program if needed, holds the editor-focus lock |
+| Statistics | `src/stats.rs` | Reads `stats.json` (counts only) for the statistics page and resets it ([ADR 0017](../../docs/adr/0017-local-statistics.md)) |
 | Updates | `src/updates.rs` | Checks for and installs signed updates; `--check-updates` checks without a window for the background program ([ADR 0015](../../docs/adr/0015-automatic-updates.md)) |
 | Interface | `web/src` | Snippet list, rich-text editor with placeholder chips (including other snippets), form fields, preview, settings, import |
 | Conversion | `web/src/convert.ts` | Typlet document ⇄ Tiptap JSON, tested against every documented example |
