@@ -1,0 +1,14 @@
+# Rust build output
+/target/
+
+# Editors and operating systems
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local environment
+.env
+*.log

@@ -1,0 +1,6 @@
+# Pinned toolchain for reproducible builds (local and CI use the same compiler).
+# To upgrade: change the version here and in .github/workflows/ci.yml, then run the full check suite.
+[toolchain]
+channel = "1.97.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"
