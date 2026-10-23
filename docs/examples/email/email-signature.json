@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "id": "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e02",
+  "trigger": ":mfg",
+  "label": "Formatted e-mail signature",
+  "content": {
+    "blocks": [
+      {
+        "type": "paragraph",
+        "content": [{ "type": "text", "text": "Mit freundlichen Grüßen" }]
+      },
+      { "type": "paragraph", "content": [] },
+      {
+        "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "Max Mustermann", "marks": { "bold": true } },
+          { "type": "line_break" },
+          { "type": "text", "text": "Musterbetrieb GmbH", "marks": { "italic": true } },
+          { "type": "line_break" },
+          {
+            "type": "text",
+            "text": "www.example.org",
+            "marks": { "link": "https://www.example.org" }
+          }
+        ]
+      }
+    ]
+  }
+}

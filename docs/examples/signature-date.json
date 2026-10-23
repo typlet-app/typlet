@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "id": "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e01",
+  "trigger": ":sig",
+  "label": "Name with today's date",
+  "content": {
+    "blocks": [
+      {
+        "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "Max Mustermann, " },
+          { "type": "date_time", "format": "%d.%m.%Y" }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "id": "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e03",
+  "trigger": ":rr",
+  "label": "Callback note (form)",
+  "content": {
+    "blocks": [
+      {
+        "type": "paragraph",
+        "content": [
+          { "type": "text", "text": "Rückruf", "marks": { "bold": true } },
+          { "type": "text", "text": " vom " },
+          { "type": "date_time", "format": "%d.%m.%Y, %H:%M" }
+        ]
+      },
+      {
+        "type": "bullet_list",
+        "items": [
+          [{ "type": "text", "text": "Anrufer: " }, { "type": "field", "name": "caller" }],
+          [{ "type": "text", "text": "Anliegen: " }, { "type": "field", "name": "reason" }],
+          [{ "type": "text", "text": "Rückruf erwünscht: " }, { "type": "field", "name": "callback" }]
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [{ "type": "text", "text": "Notiz: " }, { "type": "cursor" }]
+      }
+    ]
+  },
+  "fields": [
+    { "name": "caller", "label": "Who called?", "kind": { "type": "text" } },
+    {
+      "name": "reason",
+      "label": "Reason",
+      "kind": { "type": "choice", "options": ["Angebot", "Reklamation", "Termin"] },
+      "default": "Angebot"
+    },
+    { "name": "callback", "label": "Call back?", "kind": { "type": "yes_no" }, "default": "Ja" }
+  ]
+}
