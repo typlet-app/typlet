@@ -9,12 +9,13 @@ import { api, errorText } from "./api";
 import { ImportPage } from "./components/ImportPage";
 import { SettingsPage } from "./components/SettingsPage";
 import { Sidebar } from "./components/Sidebar";
+import { UpdatePage } from "./components/UpdatePage";
 import { normalised, SnippetEditor, type Draft } from "./editor/SnippetEditor";
 import { LangContext, translate, type Key, type Lang } from "./i18n";
-import type { AppInfo, LibraryView, Settings } from "./types";
+import type { AppInfo, LibraryView, Settings, UpdateView } from "./types";
 import { uuidv7 } from "./uuid";
 
-type Page = "home" | "snippet" | "settings" | "import";
+type Page = "home" | "snippet" | "settings" | "import" | "update";
 
 const DEFAULT_SETTINGS: Settings = {
   version: 1,
@@ -26,6 +27,7 @@ const DEFAULT_SETTINGS: Settings = {
   search_hotkey: "Ctrl+Shift+Space",
   selection_hotkey: "Ctrl+Alt+S",
   app_rules: [],
+  check_for_updates: true,
 };
 
 const snapshot = (draft: Draft | null) => (draft ? JSON.stringify([normalised(draft.snippet), draft.category]) : "");
@@ -40,6 +42,7 @@ export function App() {
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [update, setUpdate] = useState<UpdateView | null>(null);
 
   const lang: Lang =
     settings.language === "system" ? (info?.system_german ? "de" : "en") : settings.language;
@@ -86,7 +89,11 @@ export function App() {
       }
       const view = await api.loadLibrary();
       setLibrary(view);
-      if (appInfo.open_snippet) {
+      // What the last check found; no network here.
+      api.updateStatus().then(setUpdate, () => undefined);
+      if (appInfo.open_update) {
+        setPage("update");
+      } else if (appInfo.open_snippet) {
         const found = view.snippets.find((s) => s.snippet.id === appInfo.open_snippet);
         if (found) {
           const next: Draft = { snippet: structuredClone(found.snippet), category: [...found.category] };
@@ -109,9 +116,11 @@ export function App() {
       });
     });
     const offSettings = listen("open-settings", () => setPage("settings"));
+    const offUpdate = listen("open-update", () => setPage("update"));
     return () => {
       void offSnippet.then((off) => off());
       void offSettings.then((off) => off());
+      void offUpdate.then((off) => off());
     };
   }, [openSnippet]);
 
@@ -275,17 +284,20 @@ export function App() {
             />
           )}
           {page === "settings" && (
-            <SettingsPage settings={settings} libraryPath={info?.library ?? ""} onSaved={(next) => {
+            <SettingsPage settings={settings} libraryPath={info?.library ?? ""} onCheckUpdates={() => void switchPage("update")} onSaved={(next) => {
               setSettings(next);
               setSettingsError(null);
               void refreshInfo().then(reload);
             }} />
           )}
+          {page === "update" && <UpdatePage onStatus={setUpdate} />}
           {page === "import" && <ImportPage defaultDir={info?.default_espanso_dir ?? null} onImported={() => void reload()} />}
           {page === "home" && (
             <Home
               t={t}
               count={library?.snippets.length ?? 0}
+              update={update?.available?.version ?? null}
+              onUpdate={() => void switchPage("update")}
               errors={library?.errors ?? []}
               onNew={() => void newSnippet()}
               onImport={() => void switchPage("import")}
@@ -300,6 +312,8 @@ export function App() {
 function Home(props: {
   t: (key: Key, vars?: Record<string, string | number>) => string;
   count: number;
+  update: string | null;
+  onUpdate: () => void;
   errors: string[];
   onNew: () => void;
   onImport: () => void;
@@ -307,6 +321,14 @@ function Home(props: {
   const { t } = props;
   return (
     <div className="page home">
+      {props.update && (
+        <div className="update-banner">
+          <span>{t("update_banner", { version: props.update })}</span>
+          <button type="button" className="primary" onClick={props.onUpdate}>
+            {t("update_banner_button")}
+          </button>
+        </div>
+      )}
       <img src="/logo.svg" alt="" width={72} height={72} />
       <h1>{t("home_title")}</h1>
       <p>{props.count === 0 ? t("home_empty") : t("home_count", { count: props.count })}</p>

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Opening folders and starting the background program.
+//! Opening folders and web pages, and starting the background program.
 
 use std::path::Path;
 use std::process::Command;
@@ -20,6 +20,17 @@ pub(crate) fn open_folder(path: &Path) {
     let result = Command::new("xdg-open").arg(path).spawn();
     if let Err(error) = result {
         eprintln_safe(&format!("cannot open {}: {error}", path.display()));
+    }
+}
+
+/// Opens a web page in the default browser.
+pub(crate) fn open_url(url: &str) {
+    #[cfg(windows)]
+    let result = Command::new("explorer.exe").arg(url).spawn();
+    #[cfg(not(windows))]
+    let result = Command::new("xdg-open").arg(url).spawn();
+    if let Err(error) = result {
+        eprintln_safe(&format!("cannot open {url}: {error}"));
     }
 }
 
@@ -48,7 +59,7 @@ pub(crate) fn ensure_background(paths: &Paths) -> bool {
 /// The editor has no log file; problems go to standard error in debug
 /// builds, where a console exists.
 #[allow(clippy::print_stderr)]
-fn eprintln_safe(message: &str) {
+pub(crate) fn eprintln_safe(message: &str) {
     if cfg!(debug_assertions) {
         eprintln!("typlet-editor: {message}");
     }

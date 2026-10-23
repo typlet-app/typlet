@@ -23,7 +23,8 @@ A missing file or missing fields mean defaults. A file that cannot be read is re
   "app_rules": [
     { "app": "game.exe", "enabled": false },
     { "app": "crm.exe", "newline": "shift_enter", "restore_delay_ms": 800 }
-  ]
+  ],
+  "check_for_updates": true
 }
 ```
 
@@ -41,6 +42,7 @@ A missing file or missing fields mean defaults. A file that cannot be read is re
 | `selection_hotkey` | hotkey or `null` | `"Ctrl+Alt+S"` | Creates a snippet from selected text; `null` turns it off |
 | `library_path` | string | not set | A different snippet folder, for example a synced folder |
 | `app_rules` | array of [app rules](#app-rules) | `[]` | Behaviour per application |
+| `check_for_updates` | boolean | `true` | Look for a new version once a day. The editor checks; the background program never connects to the network ([ADR 0015](adr/0015-automatic-updates.md)) |
 
 ## App rules
 

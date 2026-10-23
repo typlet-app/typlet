@@ -5,10 +5,13 @@ export component TrayIcon inherits SystemTrayIcon {
     in property <bool> paused;
     in-out property <bool> autostart;
     in property <string> search-shortcut;
+    // A newer version found by the daily check, or empty.
+    in property <string> update-version;
 
     callback search();
     callback new-snippet();
     callback open-editor();
+    callback install-update();
     callback open-folder();
     callback toggle-pause();
     callback toggle-autostart();
@@ -25,6 +28,15 @@ export component TrayIcon inherits SystemTrayIcon {
     }
 
     Menu {
+        if root.update-version != "": MenuItem {
+            title: @tr("Install update {}", root.update-version);
+            activated => {
+                root.install-update();
+            }
+        }
+
+        if root.update-version != "": MenuSeparator { }
+
         MenuItem {
             title: root.search-shortcut == "" ? @tr("Search snippets…") : @tr("Search snippets…  ({})", root.search-shortcut);
             activated => {

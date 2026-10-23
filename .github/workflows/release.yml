@@ -1,8 +1,10 @@
 name: Release
 
 # Builds the installers and creates a *draft* GitHub release when a version
-# tag (v1.2.3) is pushed. Review the draft, then publish it. 0.x versions
-# are published as pre-releases (beta).
+# tag (v1.2.3) is pushed. Review the draft, then publish it. Versions with a
+# suffix (v1.0.0-rc.1) become pre-releases; 0.x versions are titled "Beta"
+# but are normal releases, because the updater reads `latest.json` from the
+# latest normal release (ADR 0015).
 # The full procedure is in docs/releasing.md.
 
 on:
@@ -175,6 +177,29 @@ jobs:
           wait-for-completion: true
           output-artifact-directory: dist
 
+      # Updater signatures (ADR 0015). They are made after code signing,
+      # which changes the Windows installer. Without the secret (forks), the
+      # installers get none and the release has no `latest.json`.
+      - name: Sign for the updater
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::notice title=Updater::no signing key configured; the installers are not signed for the updater"
+            exit 0
+          fi
+          # The version goes into the signature; the updater requires it, so
+          # an old installer cannot be passed off as a newer version.
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          for installer in dist/*-setup.exe dist/*.deb dist/*.AppImage; do
+            [ -e "$installer" ] || continue
+            node crates/typlet-editor/web/node_modules/@tauri-apps/cli/tauri.js signer sign \
+              --app-version "$version" "$installer" > /dev/null
+            echo "signed $(basename "$installer") for the updater"
+          done
+          echo "::notice title=Updater::$(ls dist/*.sig | wc -l) installers signed for the updater"
+
       - uses: actions/upload-artifact@v7
         with:
           name: installers-${{ matrix.target }}
@@ -195,6 +220,11 @@ jobs:
           pattern: installers-*
           path: dist
           merge-multiple: true
+      - name: Updater manifest
+        run: |
+          python3 scripts/updater-manifest.py dist "$GITHUB_REF_NAME" "$GITHUB_REPOSITORY" CHANGELOG.md
+          # The signatures are inside latest.json; the release page stays tidy.
+          rm -f dist/*.sig
       - name: Checksums
         working-directory: dist
         run: sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
@@ -202,9 +232,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # 0.x versions and versions like 1.0.0-rc.1 are betas.
+          # Versions like 1.0.0-rc.1 are pre-releases, which the updater
+          # ignores; 0.x versions are betas by name only.
           prerelease="" suffix=""
-          case "$GITHUB_REF_NAME" in v0.*|*-*) prerelease="--prerelease" suffix=" (Beta)" ;; esac
+          case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
+          case "$GITHUB_REF_NAME" in v0.*|*-*) suffix=" (Beta)" ;; esac
           gh release create "$GITHUB_REF_NAME" dist/* \
             --repo "$GITHUB_REPOSITORY" \
             --draft $prerelease \

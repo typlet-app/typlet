@@ -2,7 +2,7 @@
 // Typed wrappers around the editor's Rust commands (src/commands.rs).
 
 import { invoke } from "@tauri-apps/api/core";
-import type { AppInfo, ImportSummary, LibraryView, Preview, Settings, Snippet } from "./types";
+import type { AppInfo, ImportSummary, LibraryView, Preview, Settings, Snippet, UpdateView } from "./types";
 
 export const api = {
   appInfo: () => invoke<AppInfo>("app_info"),
@@ -19,6 +19,11 @@ export const api = {
   importEspanso: (dir: string) => invoke<ImportSummary>("import_espanso", { dir }),
   openFolder: (which: "library" | "data") => invoke<void>("open_folder", { which }),
   startBackground: () => invoke<boolean>("start_background"),
+  /** Opens one of Typlet's web pages in the browser. */
+  openLink: (which: "download") => invoke<void>("open_link", { which }),
+  updateStatus: () => invoke<UpdateView>("update_status"),
+  checkForUpdate: () => invoke<UpdateView>("check_for_update"),
+  installUpdate: () => invoke<void>("install_update"),
 };
 
 /** Error text from a failed command. */

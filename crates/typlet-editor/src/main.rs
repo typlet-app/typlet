@@ -12,11 +12,12 @@
 
 mod commands;
 mod os;
+mod updates;
 
 use std::process::ExitCode;
 use std::sync::Mutex;
 
-use tauri::{Emitter, Manager, WindowEvent};
+use tauri::{Emitter, Manager, WebviewWindowBuilder, WindowEvent};
 use typlet_platform::paths::Paths;
 
 use commands::{EditorState, StartArgs};
@@ -34,6 +35,10 @@ fn main() -> ExitCode {
         os::ensure_background(&paths);
         return ExitCode::SUCCESS;
     }
+    let context = tauri::generate_context!();
+    if start.check_updates {
+        return updates::run_headless_check(paths, context);
+    }
 
     let result = tauri::Builder::default()
         // A second start focuses the open window and passes its arguments,
@@ -48,12 +53,20 @@ fn main() -> ExitCode {
                 let _ = app.emit("open-snippet", id);
             } else if request.open_settings {
                 let _ = app.emit("open-settings", ());
+            } else if request.open_update {
+                let _ = app.emit("open-update", ());
             }
         }))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup({
             let paths = paths.clone();
-            move |_app| {
+            move |app| {
+                // The window is created here, not from the configuration,
+                // so `--check-updates` can run without one.
+                if let Some(config) = app.config().app.windows.first() {
+                    WebviewWindowBuilder::from_config(app.handle(), config)?.build()?;
+                }
                 // The editor is useless without the background program.
                 os::ensure_background(&paths);
                 Ok(())
@@ -90,8 +103,12 @@ fn main() -> ExitCode {
             commands::import_espanso,
             commands::open_folder,
             commands::start_background,
+            commands::open_link,
+            updates::update_status,
+            updates::check_for_update,
+            updates::install_update,
         ])
-        .run(tauri::generate_context!());
+        .run(context);
 
     match result {
         Ok(()) => ExitCode::SUCCESS,

@@ -7,11 +7,12 @@ Releases are built by the [Release workflow](../.github/workflows/release.yml) w
 | `Typlet_<version>_x64-setup.exe` | `windows-latest` | NSIS installer, per user, no admin rights |
 | `Typlet_<version>_amd64.deb` | `ubuntu-22.04` | Debian package with the udev rule; adds the installing user to `input` |
 | `Typlet_<version>_amd64.AppImage` | `ubuntu-22.04` | Portable Linux build |
+| `latest.json` | | The update feed: version, notes and the updater signature of every installer ([ADR 0015](adr/0015-automatic-updates.md)) |
 | `SHA256SUMS.txt` | | Checksums |
 
 Every build also installs and uninstalls its packages once on the runner (smoke test) and lists the files in the job summary. The same build runs for pull requests that change the packaging, and on demand from **Actions → Release → Run workflow**, without creating a release; testers find the installers under the run's **Artifacts** ([test builds](testing/test-build.md)).
 
-Versions follow [Semantic Versioning](https://semver.org). All `0.x` versions are published as **pre-releases (beta)**.
+Versions follow [Semantic Versioning](https://semver.org). `0.x` versions are titled **Beta** but published as normal releases, because the updater reads `latest.json` from the latest normal release; versions with a suffix (`1.0.0-rc.1`) become pre-releases, which the updater ignores. Installed copies see a new version only after the draft is published.
 
 ## Checklist
 
@@ -30,6 +31,19 @@ Versions follow [Semantic Versioning](https://semver.org). All `0.x` versions ar
 
    The workflow refuses to build if the tag and `Cargo.toml` disagree.
 4. When the workflow is done, open the draft under **Releases**, check the files and the text, and publish it.
+
+## Update signing key
+
+Installed copies only accept updates signed with the project's update key ([ADR 0015](adr/0015-automatic-updates.md)). Its public half is `plugins.updater.pubkey` in [`tauri.conf.json`](../crates/typlet-editor/tauri.conf.json); the private half lives in two repository secrets (**Settings → Secrets and variables → Actions**):
+
+| Secret | Content |
+|---|---|
+| `TAURI_SIGNING_PRIVATE_KEY` | The private key (one line of base64) |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | Its password |
+
+The Release workflow signs every installer after Windows code signing, including its version (`tauri signer sign --app-version`), and writes `latest.json` ([`scripts/updater-manifest.py`](../scripts/updater-manifest.py)). Without the secrets the installers are built without updater signatures and the release has no `latest.json`.
+
+**Keep an offline backup of the key and its password** (for example in a password manager). If the key is lost, installed copies cannot update themselves any more and every user has to install the next version by hand. If the key leaks, generate a new pair (`tauri signer generate`), replace the public key and the secrets, and publish a release that users install by hand once.
 
 ## Building installers locally
 
