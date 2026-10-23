@@ -81,6 +81,7 @@ Links stehen alle deine Textbausteine, nach Kategorien geordnet, mit einem Suchf
   - ⌶ **Cursor** – hier steht der Textcursor nach dem Einfügen.
   - 📋 **Zwischenablage** – was du zuletzt kopiert hast.
   - ✎ **Formularfeld** – eine Frage, die Typlet vor dem Einfügen stellt; die Antwort landet hier.
+  - 🧩 **Textbaustein** – ein anderer Textbaustein, zum Beispiel deine Signatur. Siehe [Textbausteine in Textbausteinen](#textbausteine-in-textbausteinen).
 - **Formular** listet die Fragen: Wortlaut, Art der Antwort (Text, mehrere Zeilen, Auswahl, Ja/Nein) und eine vorausgefüllte Antwort.
 - **Vorschau** zeigt den Text genau so, wie er heute eingefügt würde, und ob er getippt oder eingefügt wird.
 - **Erweitert**: immer tippen oder immer einfügen, und eine Tastenkombination, die den Textbaustein ohne Kürzel einfügt.
@@ -88,6 +89,17 @@ Links stehen alle deine Textbausteine, nach Kategorien geordnet, mit einem Suchf
 Klicke auf **Speichern** (oder **Strg+S**). Das Hintergrundprogramm übernimmt die Änderung sofort. Während du im Editor tippst, werden Kürzel nicht ersetzt.
 
 ![Formularfelder im Editor](images/de/editor-form.png)
+
+### Textbausteine in Textbausteinen
+
+Schreibe wiederkehrende Teile wie deine Signatur oder deine Adresse einmal und füge sie in andere Textbausteine ein: Klicke auf **🧩 Textbaustein** und wähle einen aus. Er erscheint als grüner Chip. Änderst du die Signatur, ändert sie sich in allen Textbausteinen, die sie enthalten.
+
+![Ein Textbaustein, der die Signatur enthält](images/de/editor-nested.png)
+
+- Klicke auf den Chip, um einen anderen Textbaustein zu wählen oder den eingefügten zu öffnen.
+- Hat der eingefügte Textbaustein Formularfragen, werden sie zusammen mit den anderen gestellt. Eine Frage mit demselben Namen kommt nur einmal.
+- Einen Textbaustein, den du nur als Baustein nutzt, kannst du ausschalten (**Aktiv**): Sein Kürzel tut dann nichts, er lässt sich aber weiter einfügen.
+- Typlet bietet keine Textbausteine an, die sich im Kreis enthalten würden. Löschst du einen Textbaustein, der anderswo verwendet wird, fragt Typlet vorher nach.
 
 ### Einstellungen
 
@@ -97,7 +109,7 @@ Klicke auf **Speichern** (oder **Strg+S**). Das Hintergrundprogramm übernimmt d
 
 ### Du kommst von espanso?
 
-**Importieren** (unten links) übernimmt deine espanso-Textbausteine samt Datum, Zwischenablage, Formularen und formatiertem Text. Deine espanso-Dateien bleiben unverändert. Textbausteine, die Skripte ausführen oder reguläre Ausdrücke nutzen, werden als nicht importiert aufgelistet.
+**Importieren** (unten links) übernimmt deine espanso-Textbausteine samt Datum, Zwischenablage, Formularen, verschachtelten Textbausteinen und formatiertem Text. Deine espanso-Dateien bleiben unverändert. Textbausteine, die Skripte ausführen oder reguläre Ausdrücke nutzen, werden als nicht importiert aufgelistet.
 
 ## Das Menü im Infobereich
 
@@ -113,6 +125,7 @@ Klicke auf **Speichern** (oder **Strg+S**). Das Hintergrundprogramm übernimmt d
 | Einrichten und testen … | Öffnet den Einrichtungsassistenten erneut |
 | Diagnose … | Zeigt, was Typlet sieht und was zuletzt passiert ist |
 | Hilfe | Öffnet diese Anleitung |
+| Typlet unterstützen ❤️ | Öffnet die Seite für Spenden |
 | Typlet beenden | Beendet Typlet, bis du es wieder startest |
 
 ## Etwas funktioniert nicht?
@@ -158,3 +171,7 @@ Online geht Typlet nur für die tägliche Suche nach Updates, und die übernimmt
 | Einstellungen | `%APPDATA%\Typlet\config\settings.json` | `~/.config/typlet/settings.json` |
 
 Jeder Textbaustein ist eine kleine Datei. Sichere den Ordner mit den Textbausteinen, um sie zu behalten.
+
+## Typlet unterstützen
+
+Typlet ist kostenlos, zeigt keine Werbung und sammelt keine Daten. Es wird durch Spenden finanziert. Wenn es dir Zeit spart, kannst du die Weiterentwicklung auf [Ko-fi](https://ko-fi.com/finnbach) unterstützen: über **Typlet unterstützen ❤️** im Menü im Infobereich oder in den Einstellungen des Editors. Testen, Probleme melden und anderen von Typlet erzählen hilft genauso.

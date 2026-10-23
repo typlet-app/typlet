@@ -7,6 +7,7 @@
 //!
 //! * [`document`]: the rich-text model of a snippet body
 //! * [`snippet`]: snippets and their validation rules
+//! * [`nesting`]: snippets inside snippets
 //! * [`mod@render`]: plain text, HTML, RTF and `CF_HTML` output
 //! * [`matcher`]: trigger detection in the keystroke stream
 //! * [`plan`]: the concrete steps that replace a trigger with its text
@@ -15,6 +16,7 @@
 //! * [`settings`]: user settings and per-application rules
 //! * [`hotkey`]: keyboard shortcuts
 //! * [`update`]: what is known about new versions
+//! * [`links`]: Typlet's web addresses (user guide, releases, donations)
 //! * [`stats`]: local usage statistics, streaks and milestones
 //!
 //! Platform crates feed keystrokes into a [`matcher::Matcher`], render the
@@ -27,7 +29,9 @@ pub mod document;
 pub mod fsutil;
 pub mod hotkey;
 pub mod library;
+pub mod links;
 pub mod matcher;
+pub mod nesting;
 pub mod plan;
 pub mod render;
 pub mod search;
@@ -40,6 +44,7 @@ pub use document::{Block, Document, Inline, Marks};
 pub use hotkey::{Hotkey, HotkeyError, Key};
 pub use library::{Library, LibraryError, LoadReport, LoadedSnippet};
 pub use matcher::{Conflict, Expansion, Input, Matcher, Outcome, find_conflicts};
+pub use nesting::NestingError;
 pub use plan::{Action, ClipboardContent, InsertedText, plan_expansion, plan_undo};
 pub use render::{
     DateLanguage, InsertMethod, RenderContext, RenderError, Rendered, render, wrap_cf_html,

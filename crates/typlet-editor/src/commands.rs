@@ -10,9 +10,10 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 use tauri::State;
+use typlet_core::links;
 use typlet_core::{
     Conflict, DateLanguage, InsertMethod, Library, RenderContext, Settings, Snippet, SnippetId,
-    find_conflicts, render,
+    find_conflicts, nesting, render,
 };
 use typlet_platform::paths::Paths;
 
@@ -207,10 +208,30 @@ fn parse_id(id: &str) -> CommandResult<SnippetId> {
         .map_err(|_| format!("invalid snippet id `{id}`"))
 }
 
-/// Checks a snippet without saving it. Returns the problem, if any.
+/// All snippets of the library, for including one in another.
+fn library_snippets(paths: &Paths) -> Vec<Snippet> {
+    library(paths)
+        .load()
+        .snippets
+        .into_iter()
+        .map(|loaded| loaded.snippet)
+        .collect()
+}
+
+/// Checks a snippet without saving it, including the snippets it includes.
+/// Returns the problem, if any.
 #[tauri::command]
-pub(crate) fn validate_snippet(snippet: Snippet) -> Option<String> {
-    snippet.validate().err().map(|error| error.to_string())
+pub(crate) fn validate_snippet(state: State<'_, EditorState>, snippet: Snippet) -> Option<String> {
+    check_snippet(&snippet, &library_snippets(&state.paths))
+}
+
+fn check_snippet(snippet: &Snippet, library: &[Snippet]) -> Option<String> {
+    if let Err(error) = snippet.validate() {
+        return Some(error.to_string());
+    }
+    nesting::check(snippet, library)
+        .err()
+        .map(|error| error.to_string())
 }
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -229,7 +250,12 @@ pub(crate) fn preview(
     snippet: Snippet,
     fields: HashMap<String, String>,
 ) -> CommandResult<Preview> {
-    render_preview(snippet, fields, date_language(&settings(&state.paths)))
+    render_preview(
+        snippet,
+        fields,
+        date_language(&settings(&state.paths)),
+        &library_snippets(&state.paths),
+    )
 }
 
 /// Day and month names follow the interface language.
@@ -251,9 +277,10 @@ fn render_preview(
     snippet: Snippet,
     fields: HashMap<String, String>,
     date_language: DateLanguage,
+    library: &[Snippet],
 ) -> CommandResult<Preview> {
     let mut values = fields;
-    for field in &snippet.fields {
+    for field in nesting::form_fields(&snippet, library) {
         values.entry(field.name.clone()).or_insert_with(|| {
             field
                 .default
@@ -266,6 +293,7 @@ fn render_preview(
         clipboard: Some("📋"),
         fields: &values,
         date_language,
+        snippets: library,
     };
     let rendered = render(&snippet, &context).map_err(|error| error.to_string())?;
     Ok(Preview {
@@ -341,12 +369,29 @@ fn import_into(library: &Library, dir: &Path) -> CommandResult<ImportSummary> {
         return Err(format!("{} is not a folder", dir.display()));
     }
     let report = typlet_import::import_dir(dir);
-    let mut taken: HashSet<String> = library
+    // The snippet that ends up with each trigger. A trigger that already
+    // exists is not imported again; snippets that include it get the one
+    // that is kept.
+    let mut kept: HashMap<String, SnippetId> = library
         .load()
         .snippets
         .into_iter()
-        .map(|l| l.snippet.trigger)
+        .map(|l| (l.snippet.trigger, l.snippet.id))
         .collect();
+    let mut relinked = HashMap::new();
+    let mut new = HashSet::new();
+    for item in &report.imported {
+        let snippet = &item.snippet;
+        match kept.get(&snippet.trigger) {
+            Some(id) => {
+                relinked.insert(snippet.id, *id);
+            }
+            None => {
+                kept.insert(snippet.trigger.clone(), snippet.id);
+                new.insert(snippet.id);
+            }
+        }
+    }
     let mut summary = ImportSummary {
         files: report.files,
         imported: Vec::new(),
@@ -354,11 +399,12 @@ fn import_into(library: &Library, dir: &Path) -> CommandResult<ImportSummary> {
         existing: Vec::new(),
         saved: 0,
     };
-    for item in report.imported {
-        if !taken.insert(item.snippet.trigger.clone()) {
+    for mut item in report.imported {
+        if !new.contains(&item.snippet.id) {
             summary.existing.push(item.snippet.trigger);
             continue;
         }
+        nesting::relink(&mut item.snippet.content, &relinked);
         library
             .save(&item.snippet, &item.category)
             .map_err(|error| error.to_string())?;
@@ -389,7 +435,8 @@ pub(crate) fn open_folder(state: State<'_, EditorState>, which: String) {
 /// URL, so it cannot open arbitrary addresses.
 fn link(which: &str) -> Option<&'static str> {
     match which {
-        "download" => Some("https://github.com/typlet-app/typlet/releases/latest"),
+        "download" => Some(links::LATEST_RELEASE),
+        "donate" => Some(links::DONATE),
         _ => None,
     }
 }
@@ -423,6 +470,7 @@ mod tests {
             link("download"),
             Some("https://github.com/typlet-app/typlet/releases/latest")
         );
+        assert_eq!(link("donate"), Some("https://ko-fi.com/finnbach"));
         assert_eq!(link("https://example.com"), None);
     }
 
@@ -479,9 +527,35 @@ mod tests {
     fn preview_uses_defaults_and_reports_method() {
         let mut s = snippet(":p");
         s.content = Document::from_plain_text("eins\nzwei");
-        let preview = render_preview(s, HashMap::new(), DateLanguage::English).unwrap();
+        let preview = render_preview(s, HashMap::new(), DateLanguage::English, &[]).unwrap();
         assert_eq!(preview.plain, "eins\nzwei");
         assert_eq!(preview.method, "paste");
+    }
+
+    #[test]
+    fn included_snippets_are_previewed_and_checked() {
+        let mut signature = snippet(":sig");
+        signature.content = Document::from_plain_text("Anna");
+        let mut letter = snippet(":brief");
+        letter.content = Document {
+            blocks: vec![typlet_core::Block::Paragraph {
+                content: vec![
+                    typlet_core::Inline::text("Grüße, "),
+                    typlet_core::Inline::Snippet { id: signature.id },
+                ],
+            }],
+        };
+        let library = vec![signature.clone()];
+        let preview = render_preview(
+            letter.clone(),
+            HashMap::new(),
+            DateLanguage::German,
+            &library,
+        )
+        .unwrap();
+        assert_eq!(preview.plain, "Grüße, Anna");
+        assert_eq!(check_snippet(&letter, &library), None);
+        assert!(check_snippet(&letter, &[]).is_some());
     }
 
     #[test]
@@ -506,5 +580,38 @@ mod tests {
             .find(|s| s.snippet.trigger == ":new")
             .unwrap();
         assert_eq!(new.category, ["espanso", "base"]);
+    }
+
+    #[test]
+    fn imported_nested_matches_use_existing_snippets() {
+        let dir = tempfile::tempdir().unwrap();
+        let library = Library::new(dir.path().join("lib"));
+        let mut sig = snippet(":sig");
+        sig.content = Document::from_plain_text("Anna");
+        save_into(&library, &sig, &[]).unwrap();
+        let espanso = dir.path().join("espanso").join("match");
+        std::fs::create_dir_all(&espanso).unwrap();
+        std::fs::write(
+            espanso.join("base.yml"),
+            "matches:\n  - trigger: ':mail'\n    replace: 'Hi {{s}}'\n    vars:\n      - name: s\n        type: match\n        params:\n          trigger: ':sig'\n  - trigger: ':sig'\n    replace: Bob\n",
+        )
+        .unwrap();
+        let summary = import_into(&library, &dir.path().join("espanso")).unwrap();
+        assert_eq!(summary.existing, [":sig"]);
+        let view = load_view(&library);
+        let mail = view
+            .snippets
+            .iter()
+            .find(|s| s.snippet.trigger == ":mail")
+            .unwrap();
+        let all: Vec<Snippet> = view.snippets.iter().map(|s| s.snippet.clone()).collect();
+        let preview = render_preview(
+            mail.snippet.clone(),
+            HashMap::new(),
+            DateLanguage::English,
+            &all,
+        )
+        .unwrap();
+        assert_eq!(preview.plain, "Hi Anna");
     }
 }

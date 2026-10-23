@@ -15,6 +15,7 @@ export const NODE = {
   cursor: "cursor",
   clipboard: "clipboard",
   field: "field",
+  snippet: "snippet",
 } as const;
 
 // ----- Typlet → Tiptap -----------------------------------------------------
@@ -51,6 +52,8 @@ function inlineToTiptap(inline: Inline): JSONContent | null {
       return { type: NODE.clipboard };
     case "field":
       return { type: NODE.field, attrs: { name: inline.name } };
+    case "snippet":
+      return { type: NODE.snippet, attrs: { id: inline.id } };
   }
 }
 
@@ -165,6 +168,9 @@ function inlinesFromTiptap(nodes: JSONContent[] | undefined, out: Inline[] = [])
       case NODE.field:
         push(out, { type: "field", name: String(node.attrs?.["name"] ?? "") });
         break;
+      case NODE.snippet:
+        push(out, { type: "snippet", id: String(node.attrs?.["id"] ?? "") });
+        break;
       default:
         // Unknown inline containers: keep their content.
         inlinesFromTiptap(node.content, out);
@@ -213,19 +219,27 @@ export function fromTiptap(doc: JSONContent): TypletDocument {
   return { blocks };
 }
 
+/** Every inline of a document, in reading order. */
+export function inlines(doc: TypletDocument): Inline[] {
+  return doc.blocks.flatMap((block) => (block.type === "paragraph" ? (block.content ?? []) : block.items.flat()));
+}
+
 /** Names of all fields used in a document, in order of first use. */
 export function usedFields(doc: TypletDocument): string[] {
   const names: string[] = [];
-  const visit = (inlines: Inline[] | undefined) => {
-    for (const inline of inlines ?? []) {
-      if (inline.type === "field" && !names.includes(inline.name)) names.push(inline.name);
-    }
-  };
-  for (const block of doc.blocks) {
-    if (block.type === "paragraph") visit(block.content);
-    else block.items.forEach(visit);
+  for (const inline of inlines(doc)) {
+    if (inline.type === "field" && !names.includes(inline.name)) names.push(inline.name);
   }
   return names;
+}
+
+/** Ids of the snippets a document includes, each once, in reading order. */
+export function includedIds(doc: TypletDocument): string[] {
+  const ids: string[] = [];
+  for (const inline of inlines(doc)) {
+    if (inline.type === "snippet" && !ids.includes(inline.id)) ids.push(inline.id);
+  }
+  return ids;
 }
 
 /** True if the document contains a cursor placeholder. */

@@ -9,7 +9,10 @@ import { useT } from "../i18n";
 interface Props {
   editor: Editor;
   hasCursor: boolean;
+  /** The snippet picker is open. */
+  picking: boolean;
   onAddField: () => void;
+  onAddSnippet: () => void;
   onLink: () => void;
 }
 
@@ -37,7 +40,7 @@ function Button(props: {
   );
 }
 
-export function Toolbar({ editor, hasCursor, onAddField, onLink }: Props) {
+export function Toolbar({ editor, hasCursor, picking, onAddField, onAddSnippet, onLink }: Props) {
   const t = useT();
   const state = useEditorState({
     editor,
@@ -83,6 +86,7 @@ export function Toolbar({ editor, hasCursor, onAddField, onLink }: Props) {
           onClick={() => chain().insertContent({ type: NODE.clipboard }).run()}
         />
         <Button label={`✎ ${t("insert_field")}`} title={t("insert_field_title")} onClick={onAddField} />
+        <Button label={`🧩 ${t("insert_snippet")}`} title={t("insert_snippet_title")} active={picking} onClick={onAddSnippet} />
       </div>
     </div>
   );

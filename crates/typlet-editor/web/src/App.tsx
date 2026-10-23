@@ -12,6 +12,7 @@ import { Sidebar } from "./components/Sidebar";
 import { UpdatePage } from "./components/UpdatePage";
 import { normalised, SnippetEditor, type Draft } from "./editor/SnippetEditor";
 import { LangContext, translate, type Key, type Lang } from "./i18n";
+import { usersOf } from "./nesting";
 import type { AppInfo, LibraryView, Settings, UpdateView } from "./types";
 import { uuidv7 } from "./uuid";
 
@@ -47,6 +48,7 @@ export function App() {
   const lang: Lang =
     settings.language === "system" ? (info?.system_german ? "de" : "en") : settings.language;
   const t = useCallback((key: Key, vars?: Record<string, string | number>) => translate(lang, key, vars), [lang]);
+  const allSnippets = useMemo(() => (library?.snippets ?? []).map((s) => s.snippet), [library]);
   const dirty = draft !== null && snapshot(draft) !== saved;
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
@@ -203,7 +205,14 @@ export function App() {
 
   const remove = async () => {
     if (!draft) return;
-    const confirmed = await ask(t("delete_confirm", { label: draft.snippet.label || draft.snippet.trigger }), {
+    const label = draft.snippet.label || draft.snippet.trigger;
+    // Snippets that include this one would lose that part.
+    const users = usersOf(allSnippets, draft.snippet.id).map((s) => s.trigger);
+    const question =
+      users.length > 0
+        ? t("delete_confirm_used", { label, users: users.join(", ") })
+        : t("delete_confirm", { label });
+    const confirmed = await ask(question, {
       title: "Typlet",
       kind: "warning",
     });
@@ -277,14 +286,16 @@ export function App() {
               error={error}
               others={others}
               categories={categories}
+              library={allSnippets}
               onChange={setDraft}
+              onOpenSnippet={(id) => void openSnippet(id)}
               onSave={() => void save()}
               onDelete={() => void remove()}
               onDuplicate={duplicate}
             />
           )}
           {page === "settings" && (
-            <SettingsPage settings={settings} libraryPath={info?.library ?? ""} onCheckUpdates={() => void switchPage("update")} onSaved={(next) => {
+            <SettingsPage settings={settings} libraryPath={info?.library ?? ""} version={info?.version ?? ""} onCheckUpdates={() => void switchPage("update")} onSaved={(next) => {
               setSettings(next);
               setSettingsError(null);
               void refreshInfo().then(reload);
@@ -345,6 +356,12 @@ function Home(props: {
         <li>{t("tip_placeholders")}</li>
         <li>{t("tip_search")}</li>
       </ul>
+      <p className="muted small">
+        {t("home_donate")}{" "}
+        <button type="button" className="link-button" onClick={() => void api.openLink("donate")}>
+          {t("donate")}
+        </button>
+      </p>
       {props.errors.length > 0 && (
         <section className="panel">
           <h3>{t("library_errors")}</h3>

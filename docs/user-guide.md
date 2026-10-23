@@ -81,6 +81,7 @@ On the left are all your snippets, grouped by category, with a search field. Cli
   - ⌶ **Cursor** – where the text cursor ends up after inserting.
   - 📋 **Clipboard** – whatever you copied last.
   - ✎ **Form field** – a question Typlet asks before inserting; the answer is put here.
+  - 🧩 **Snippet** – another snippet, for example your signature. See [Snippets inside snippets](#snippets-inside-snippets).
 - **Form** lists the questions: their wording, the type of answer (text, several lines, a choice, yes/no) and a pre-filled answer.
 - **Preview** shows the text exactly as it will be inserted today, and whether it will be typed or pasted.
 - **Advanced**: always type or always paste, and a keyboard shortcut that inserts the snippet without typing the trigger.
@@ -88,6 +89,17 @@ On the left are all your snippets, grouped by category, with a search field. Cli
 Press **Save** (or **Ctrl+S**). The background program picks up the change at once. While you type in the editor, triggers are not replaced.
 
 ![Form fields in the editor](images/en/editor-form.png)
+
+### Snippets inside snippets
+
+Write recurring parts such as your signature or your address once and insert them into other snippets: click **🧩 Snippet** and choose one. It appears as a green chip. When you change the signature, every snippet that contains it changes too.
+
+![A snippet that contains the signature](images/en/editor-nested.png)
+
+- Click the chip to choose a different snippet or to open the included one.
+- If the included snippet has form questions, they are asked together with the others. A question with the same name is asked only once.
+- A snippet you only use as a building block can be switched off (**Active**): its trigger then does nothing, but it can still be included.
+- Typlet does not offer snippets that would include each other in a circle. Deleting a snippet that is used elsewhere asks first.
 
 ### Settings
 
@@ -97,7 +109,7 @@ Press **Save** (or **Ctrl+S**). The background program picks up the change at on
 
 ### Coming from espanso?
 
-**Import** (bottom left) takes over your espanso snippets, including dates, the clipboard, forms and formatted text. Your espanso files are not changed. Snippets that run scripts or use regular expressions are listed as not imported.
+**Import** (bottom left) takes over your espanso snippets, including dates, the clipboard, forms, nested matches and formatted text. Your espanso files are not changed. Snippets that run scripts or use regular expressions are listed as not imported.
 
 ## The tray menu
 
@@ -113,6 +125,7 @@ Press **Save** (or **Ctrl+S**). The background program picks up the change at on
 | Set up and test… | Opens the set-up assistant again |
 | Diagnostics… | Shows what Typlet sees and what happened recently |
 | Help | Opens this guide |
+| Support Typlet ❤️ | Opens the donation page |
 | Quit Typlet | Ends Typlet until you start it again |
 
 ## Something does not work?
@@ -158,3 +171,7 @@ The only time Typlet goes online is the daily update check, which the editor doe
 | Settings | `%APPDATA%\Typlet\config\settings.json` | `~/.config/typlet/settings.json` |
 
 Each snippet is one small file. Back up the snippets folder to keep your snippets safe.
+
+## Supporting Typlet
+
+Typlet is free, has no ads and collects no data. It is funded by donations. If it saves you time, you can support its development on [Ko-fi](https://ko-fi.com/finnbach): via **Support Typlet ❤️** in the tray menu or in the editor's settings. Testing, reporting problems and telling others about Typlet help just as much.

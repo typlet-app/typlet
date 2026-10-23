@@ -72,6 +72,7 @@ Unknown fields are ignored, so newer files with extra optional data still load i
 | `cursor` | | Where the text cursor ends up. At most one per snippet. |
 | `clipboard` | | The clipboard text at the moment of expansion. |
 | `field` | `name` | The value entered for the [field](#fields) with that name. |
+| `snippet` | `id` | The snippet with that `id`, see [snippets inside snippets](#snippets-inside-snippets). |
 
 Common date formats: `%d.%m.%Y` → `23.10.2026`, `%d.%m.%Y, %H:%M` → `23.10.2026, 09:42`, `%A, %-d. %B %Y` → `Friday, 23. October 2026`.
 
@@ -103,6 +104,23 @@ A field may be referenced several times; the user fills it in once.
 
 A `yes_no` field inserts the word for *yes* or *no* in the interface language (`Ja`/`Nein` in German, `Yes`/`No` in English). Its `default` may be either language's word, `true` or `1` for yes; anything else means no. A `choice` field whose default is not one of its options starts with the first option.
 
+## Snippets inside snippets
+
+A `snippet` inline inserts another snippet, for example a signature at the end of several letters. Change the signature once and every letter that includes it changes too. The decision is recorded in [ADR 0016](adr/0016-snippets-inside-snippets.md).
+
+```json
+{ "type": "paragraph", "content": [{ "type": "snippet", "id": "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e02" }] }
+```
+
+- The snippet is referenced by its `id`, so changing its trigger, name or category does not break the reference.
+- **Alone in a paragraph**, the included snippet's blocks are inserted unchanged: paragraphs, lists and formatting.
+- **Inside text**, its paragraphs become lines; list items become lines starting with `• ` or `1. `. Formatting is kept.
+- Its **form fields** are asked in the same form as the outer snippet's. Fields with the same name are asked once and share their value; the outer snippet's label wins.
+- Its **cursor** is ignored; only the outer snippet decides where the cursor ends up.
+- Dates show the same moment, and the clipboard is read once.
+- A **switched-off** snippet (`"enabled": false`) can still be included: its trigger does nothing, but it works as a building block.
+- Snippets may be nested at most **5 levels** deep. A snippet that includes itself (directly or through others) or a snippet that no longer exists is not inserted; Typlet shows a message instead, the editor refuses to save it and the diagnostics list it.
+
 ## Hotkeys
 
 A hotkey is written as modifiers and one key joined with `+`, for example `Ctrl+Alt+M`, `Ctrl+Shift+F5` or `Strg+Umschalt+Leertaste`.
@@ -118,6 +136,7 @@ Implemented in [`hotkey.rs`](../crates/typlet-core/src/hotkey.rs). If two snippe
 
 - [`examples/email/email-signature.json`](examples/email/email-signature.json): bold, italic, a link and a hotkey (category `email`)
 - [`examples/callback-note.json`](examples/callback-note.json): a form with text, choice and yes/no fields, a list and a cursor position
+- [`examples/email/thanks-for-enquiry.json`](examples/email/thanks-for-enquiry.json): a date two days ahead and the e-mail signature included as a snippet
 
 ## Validation rules
 
@@ -129,7 +148,10 @@ A snippet is rejected if:
 - a `text` inline contains a newline,
 - a `date_time` format is invalid,
 - a `field` inline references an undefined field,
+- a `snippet` inline references the snippet itself,
 - two fields share a name, or a `choice` field has no options.
+
+When it is saved and inserted, a snippet is also checked against the library: every included snippet must exist, and there must be no loop and no more than 5 levels ([`nesting.rs`](../crates/typlet-core/src/nesting.rs)).
 
 ## Versioning
 
