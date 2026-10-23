@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Windows backend.
 //!
-//! * **Input:** low-level keyboard and mouse hooks on a dedicated thread. The
-//!   hook callbacks only translate and enqueue; Windows removes hooks that
-//!   answer too slowly.
+//! * **Input:** Raw Input on a hidden window of its own thread: Windows sends
+//!   it a copy of every key press and mouse click. It only reads; nothing is
+//!   hooked into other programs.
+//! * **Shortcuts:** registered with `RegisterHotKey`; Windows reports them
+//!   and keeps them from the focused app.
 //! * **Translation:** `ToUnicodeEx` with the "do not change keyboard state"
 //!   flag, so the user's dead keys (`^`, `´`) keep working in the target app.
 //! * **Injection:** `SendInput` with Unicode key events, independent of the
-//!   keyboard layout. Injected events are ignored by the hook.
+//!   keyboard layout. Simulated input arrives without a device and is
+//!   ignored by the input thread.
 //! * **Clipboard:** `CF_UNICODETEXT`, `HTML Format` and `Rich Text Format`,
 //!   marked as transient for clipboard history; all previous formats are
 //!   restored afterwards.
@@ -16,8 +19,8 @@
 
 mod clipboard;
 mod focus;
-mod hook;
 mod inject;
+mod input;
 
 use std::thread;
 use std::time::Duration;
@@ -51,13 +54,14 @@ impl Backend {
             return Ok(());
         }
         let shared = Shared::new(sink, &self.controls);
-        hook::start(shared)?;
+        input::start(shared)?;
         self.started = true;
         Ok(())
     }
 
     pub(crate) fn set_hotkeys(&self, hotkeys: &[Hotkey]) {
         self.controls.set_hotkeys(hotkeys);
+        input::hotkeys_changed();
     }
 
     pub(crate) fn execute(
@@ -123,8 +127,9 @@ impl Backend {
         text.filter(|t| !t.is_empty())
     }
 
-    pub(crate) fn arm_undo(&self, armed: bool) {
-        self.controls.arm_undo(armed);
+    pub(crate) fn arm_undo(&self, _armed: bool) {
+        // Raw input cannot keep a key press from reaching the application,
+        // so the engine always sees `suppressed: false`.
     }
 
     pub(crate) fn remember_focus(&mut self) {

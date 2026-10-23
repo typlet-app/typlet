@@ -91,7 +91,7 @@ Klicke auf **Speichern** (oder **Strg+S**). Das Hintergrundprogramm übernimmt d
 
 ### Einstellungen
 
-**Einstellungen** (unten links) enthalten Sprache, Start mit dem Computer, Meldungen, die Tastenkombinationen, den Ordner mit den Textbausteinen (wähle einen synchronisierten Ordner wie OneDrive, um sie auf mehreren Computern zu nutzen) und **Regeln für Programme**: Typlet in einem Programm ausschalten oder ändern, wie es dort Text einfügt.
+**Einstellungen** (unten links) enthalten Sprache, Start mit dem Computer, Meldungen, die Tastenkombinationen, den Ordner mit den Textbausteinen (wähle einen synchronisierten Ordner wie OneDrive, um sie auf mehreren Computern zu nutzen) und **Regeln für Programme**: Typlet in einem Programm ausschalten oder ändern, wie es dort Text einfügt. Benutzt ein anderes Programm schon eine deiner Tastenkombinationen, sagt Typlet dir Bescheid; wähle dann hier eine andere.
 
 ![Einstellungen](images/de/editor-settings.png)
 

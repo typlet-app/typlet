@@ -17,7 +17,7 @@ This document describes how Typlet is built and why. Decisions behind it are rec
 flowchart TB
     subgraph BG["typlet (background program, always running)"]
         direction TB
-        H["Input threads<br/>keyboard hook / evdev"] -->|events| E["Engine thread<br/>matcher → renderer → plan → platform"]
+        H["Input threads<br/>raw input / evdev"] -->|events| E["Engine thread<br/>matcher → renderer → plan → platform"]
         UI["UI thread (Slint)<br/>tray · search · forms · set-up · diagnostics"] <-->|commands / notices| E
         W["Watcher thread"] -->|reload| UI
     end
@@ -55,7 +55,7 @@ Rich-text editing is the one area where web technology is far ahead (Tiptap/Pros
 
 | Thread | Does | Must never |
 |---|---|---|
-| Input (`typlet-hook` on Windows; one reader per device plus `typlet-translate` on Linux) | Reads key presses, translates them to characters, recognises hotkeys, pushes events into a channel | Block or do work. Windows silently removes keyboard hooks that respond too slowly. |
+| Input (`typlet-input` on Windows; one reader per device plus `typlet-translate` on Linux) | Reads key presses, translates them to characters, recognises hotkeys, pushes events into a channel | Block or do work. |
 | Engine (`typlet-engine`) | Owns the platform backend: runs the matcher, renders, plans and executes insertions | Touch the UI directly |
 | UI (main) | Tray menu and windows; owns settings and the loaded library | Run long tasks |
 | Watcher (`typlet-watcher`) | Notices changed files, waits until writing has settled (300 ms) and asks the UI to reload | Parse snippets on behalf of the engine |
@@ -96,7 +96,7 @@ Implemented in [`matcher.rs`](../crates/typlet-core/src/matcher.rs) ([ADR 0007](
 
 - Expansion is **instant**: the last character of the trigger fires it.
 - The **longest** matching trigger wins.
-- **Backspace right after an expansion undoes it** and restores the trigger ([`plan_undo`](../crates/typlet-core/src/plan.rs)). On Windows the Backspace is held back so the undo is exact; on Linux it reaches the app and the undo accounts for the deleted character. Formatted (pasted) snippets cannot be undone this way; Backspace then works normally.
+- **Backspace right after an expansion undoes it** and restores the trigger ([`plan_undo`](../crates/typlet-core/src/plan.rs)). Typlet only reads the keyboard, so the Backspace reaches the app and the undo accounts for the deleted character. Formatted (pasted) snippets cannot be undone this way; Backspace then works normally.
 - The platform layer sends `Reset` whenever the typing position might have changed: mouse clicks, arrow keys, Enter, Tab, focus changes, shortcuts, dead keys. The matcher never guesses across such events.
 - Nothing expands while Typlet is paused, while a form is open, or while one of Typlet's own windows with text fields (search, form, new snippet) is open. The set-up assistant's test field is the deliberate exception.
 
@@ -178,12 +178,12 @@ flowchart LR
 
 | | Windows | Linux (Wayland and X11) | macOS (after V1) |
 |---|---|---|---|
-| Keyboard input | Low-level keyboard and mouse hooks on a dedicated thread; injected events ignored | evdev (`/dev/input`), user in the `input` group; Typlet's own virtual keyboard ignored; devices rescanned every 3 s | Event tap (Accessibility permission) |
+| Keyboard input | Raw Input (`RIDEV_INPUTSINK`) on a hidden window of a dedicated thread; reads only, never changes or withholds keys; simulated input (no device) ignored; modifier state tracked from the raw events ([ADR 0014](adr/0014-raw-input-on-windows.md)) | evdev (`/dev/input`), user in the `input` group; Typlet's own virtual keyboard ignored; devices rescanned every 3 s | Event tap (Accessibility permission) |
 | Characters from keys | `ToUnicodeEx` with the foreground window's layout and the "keep keyboard state" flag, so dead keys (`^`, `´`) still work in the app | xkbcommon with the detected layout (GNOME, KDE, `/etc/default/keyboard`, environment) and compose rules | System layout APIs |
-| Typing | Unicode `SendInput` in small batches | uinput virtual keyboard; characters missing from the layout are pasted | Event posting |
+| Typing | Unicode `SendInput` in small batches | uinput virtual keyboard; characters missing from the layout are pasted. Before pressing a key, Typlet waits until the user has let go of it, because the compositor ignores a press of a key that another keyboard still holds ([`held.rs`](../crates/typlet-platform/src/linux/held.rs)) | Event posting |
 | Clipboard | Win32 clipboard with `CF_UNICODETEXT`, `HTML Format`, `Rich Text Format` | X11 clipboard (XWayland), which GNOME and KDE bridge to Wayland apps | NSPasteboard |
 | Focused app | Executable of the foreground window; password fields via UI Automation (MTA, 300 ms timeouts) | Not available on GNOME Wayland; all apps use the default rule | Accessibility API |
-| Global hotkeys | Detected and swallowed in the keyboard hook ([ADR 0009](adr/0009-hotkeys-in-the-input-layer.md)) | Detected in the evdev stream; the app also receives the keys | Event tap |
+| Global hotkeys | `RegisterHotKey`; Windows keeps them from the focused app; a shortcut another program owns is reported ([ADR 0014](adr/0014-raw-input-on-windows.md)) | Detected in the evdev stream; the app also receives the keys | Event tap |
 | Tray | `Shell_NotifyIcon` via Slint | StatusNotifierItem via Slint (Ubuntu ships the AppIndicator extension) | Menu bar extra |
 | Autostart | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | `~/.config/autostart/typlet.desktop` (uses `$APPIMAGE` when packaged) | Login item |
 
@@ -192,7 +192,8 @@ Known limits:
 - Windows blocks input into programs running as administrator unless Typlet is signed and installed with UIAccess ([ADR 0008](adr/0008-code-signing.md)).
 - GNOME does not reveal the focused window without an extension, so app rules and password-field detection are unavailable on GNOME in V1.
 - GNOME may show "Typlet is ready" instead of focusing the quick search, because the hotkey did not reach Typlet through the compositor. Clicking the notification opens it.
-- On Linux the user's Backspace after an expansion reaches the app; undo still works for plain text.
+- The user's Backspace after an expansion reaches the app before the undo; the result is the same.
+- Raw input does not see typing in programs running as administrator (Windows), where Typlet cannot type anyway.
 
 ## Files
 

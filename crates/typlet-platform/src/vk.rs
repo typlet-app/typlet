@@ -4,7 +4,7 @@
 //! Kept free of Windows APIs so the mapping is unit-tested on every platform.
 #![cfg_attr(not(windows), allow(dead_code))] // only the tests use it elsewhere
 
-use typlet_core::Key;
+use typlet_core::{Hotkey, Key};
 
 pub(crate) const BACK: u16 = 0x08;
 pub(crate) const TAB: u16 = 0x09;
@@ -39,6 +39,14 @@ pub(crate) const LCONTROL: u16 = 0xA2;
 pub(crate) const RCONTROL: u16 = 0xA3;
 pub(crate) const LMENU: u16 = 0xA4;
 pub(crate) const RMENU: u16 = 0xA5;
+
+/// `RegisterHotKey` modifier flags.
+pub(crate) const MOD_ALT: u32 = 0x0001;
+pub(crate) const MOD_CONTROL: u32 = 0x0002;
+pub(crate) const MOD_SHIFT: u32 = 0x0004;
+pub(crate) const MOD_WIN: u32 = 0x0008;
+/// Holding the shortcut down does not repeat it.
+pub(crate) const MOD_NOREPEAT: u32 = 0x4000;
 
 /// Modifier and lock keys never produce text and never reset matching.
 pub(crate) fn is_modifier_or_lock(vk: u16) -> bool {
@@ -97,6 +105,45 @@ pub(crate) fn to_key(vk: u16) -> Option<Key> {
     })
 }
 
+/// Maps a hotkey key to the virtual key Windows reports for it. Letters
+/// follow the keyboard layout (the `Z` key on QWERTZ reports `Z`).
+pub(crate) fn from_key(key: Key) -> Option<u16> {
+    Some(match key {
+        Key::Letter(c) if c.is_ascii_alphabetic() => {
+            u16::from(u8::try_from(c.to_ascii_uppercase()).ok()?)
+        }
+        Key::Digit(d) if d <= 9 => 0x30 + u16::from(d),
+        Key::Function(n) if (1..=24).contains(&n) => F1 + u16::from(n) - 1,
+        Key::Space => SPACE,
+        Key::Enter => RETURN,
+        Key::Tab => TAB,
+        Key::Escape => ESCAPE,
+        Key::Insert => INSERT,
+        Key::Delete => DELETE,
+        Key::Home => HOME,
+        Key::End => END,
+        Key::PageUp => PRIOR,
+        Key::PageDown => NEXT,
+        _ => return None,
+    })
+}
+
+/// The `RegisterHotKey` modifiers and virtual key for a hotkey.
+pub(crate) fn registration(hotkey: &Hotkey) -> Option<(u32, u16)> {
+    let mut modifiers = MOD_NOREPEAT;
+    for (on, flag) in [
+        (hotkey.ctrl, MOD_CONTROL),
+        (hotkey.alt, MOD_ALT),
+        (hotkey.shift, MOD_SHIFT),
+        (hotkey.meta, MOD_WIN),
+    ] {
+        if on {
+            modifiers |= flag;
+        }
+    }
+    Some((modifiers, from_key(hotkey.key)?))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,6 +157,41 @@ mod tests {
         assert_eq!(to_key(F24), Some(Key::Function(24)));
         assert_eq!(to_key(SPACE), Some(Key::Space));
         assert_eq!(to_key(SHIFT), None);
+    }
+
+    #[test]
+    fn hotkey_keys_round_trip() {
+        for key in [
+            Key::Letter('A'),
+            Key::Letter('Z'),
+            Key::Digit(0),
+            Key::Digit(9),
+            Key::Function(1),
+            Key::Function(24),
+            Key::Space,
+            Key::Enter,
+            Key::PageDown,
+        ] {
+            let vk = from_key(key);
+            assert!(vk.is_some(), "{key:?}");
+            assert_eq!(vk.and_then(to_key), Some(key));
+        }
+        assert_eq!(from_key(Key::Letter('s')), Some(0x53));
+        assert_eq!(from_key(Key::Function(25)), None);
+    }
+
+    #[test]
+    fn registers_hotkeys_without_repeat() {
+        let search = registration(&Hotkey::default_search());
+        assert_eq!(
+            search,
+            Some((MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, SPACE))
+        );
+        let selection = registration(&Hotkey::default_selection());
+        assert_eq!(
+            selection,
+            Some((MOD_CONTROL | MOD_ALT | MOD_NOREPEAT, 0x53))
+        );
     }
 
     #[test]

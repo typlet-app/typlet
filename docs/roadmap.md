@@ -15,7 +15,7 @@ Typlet V1 targets **Windows** as the polished product and **Linux (Wayland)** at
 
 - [x] Platform layer interface (`typlet-platform`)
 - [x] Linux backend: evdev input, xkbcommon translation, uinput typing, clipboard
-- [x] Windows backend: keyboard hook, dead-key-safe translation, Unicode typing, clipboard with `CF_HTML`/RTF
+- [x] Windows backend: raw keyboard input, dead-key-safe translation, Unicode typing, clipboard with `CF_HTML`/RTF
 - [x] Clipboard save and restore with all formats, transient marking
 - [x] Background program with tray icon, pause/resume and autostart
 - [x] App rules with built-in defaults for Excel, chat apps, browsers and remote desktops

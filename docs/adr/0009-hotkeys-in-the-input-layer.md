@@ -1,6 +1,6 @@
 # 0009. Global hotkeys are detected in the input layer
 
-- Status: Accepted
+- Status: Accepted; the Windows part is superseded by [ADR 0014](0014-raw-input-on-windows.md)
 - Date: 2026-10-23
 
 ## Context

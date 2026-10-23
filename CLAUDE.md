@@ -35,7 +35,7 @@ All five must pass before a change is finished. CI runs them on Linux and Window
 ## Layout
 
 - `crates/typlet-core`: format, validation, matching, rendering, plans, search, settings, storage
-- `crates/typlet-platform`: OS backends (Windows hooks/SendInput/clipboard/UIA, Linux evdev/xkbcommon/uinput), paths, autostart
+- `crates/typlet-platform`: OS backends (Windows raw input/RegisterHotKey/SendInput/clipboard/UIA, Linux evdev/xkbcommon/uinput), paths, autostart
 - `crates/typlet`: background program (engine thread, Slint UI in `ui/`, German texts in `lang/`)
 - `crates/typlet-editor`: editor (Tauri; React + Tiptap interface in `web/`, texts in `web/src/i18n/`)
 - `crates/typlet-import`: espanso import

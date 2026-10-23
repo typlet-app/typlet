@@ -13,6 +13,7 @@ export enum MessageKind {
     library-problem,
     settings-problem,
     editor-missing,
+    hotkey-taken,
 }
 
 export component MessageWindow inherits Window {
@@ -23,12 +24,15 @@ export component MessageWindow inherits Window {
     callback dismiss();
 
     out property <bool> is-error: root.kind == MessageKind.insert-failed || root.kind == MessageKind.input-failed || root.kind == MessageKind.library-problem || root.kind == MessageKind.settings-problem;
+    // For a taken shortcut the detail is the shortcut itself, part of the text.
+    out property <bool> show-detail: root.detail != "" && root.kind != MessageKind.hotkey-taken;
     out property <string> heading: root.kind == MessageKind.already-running ? @tr("Typlet is already running")
         : root.kind == MessageKind.no-selection ? @tr("No text selected")
         : root.kind == MessageKind.insert-failed ? @tr("The snippet could not be inserted")
         : root.kind == MessageKind.input-failed ? @tr("Typlet cannot read the keyboard")
         : root.kind == MessageKind.library-problem ? @tr("Some snippets could not be loaded")
         : root.kind == MessageKind.settings-problem ? @tr("The settings could not be read")
+        : root.kind == MessageKind.hotkey-taken ? @tr("This shortcut is already in use")
         : @tr("The editor is not installed");
     out property <string> body: root.kind == MessageKind.already-running ? @tr("You find Typlet as an icon in the system tray, next to the clock.")
         : root.kind == MessageKind.no-selection ? @tr("Select some text first, then press the shortcut again. Typlet turns the selection into a new snippet.")
@@ -36,9 +40,11 @@ export component MessageWindow inherits Window {
         : root.kind == MessageKind.input-failed ? @tr("Without keyboard access, triggers cannot expand. The set-up assistant explains how to fix this.")
         : root.kind == MessageKind.library-problem ? @tr("The other snippets work normally. Diagnostics lists the affected files.")
         : root.kind == MessageKind.settings-problem ? @tr("Typlet uses the default settings until the file is fixed.")
+        : root.kind == MessageKind.hotkey-taken ? @tr("Another program already uses {}, so Typlet cannot. Choose a different shortcut in the settings.", root.detail)
         : @tr("Typlet opens your snippet folder instead.");
     out property <string> action: root.kind == MessageKind.input-failed ? @tr("Open set-up assistant")
         : root.kind == MessageKind.insert-failed || root.kind == MessageKind.library-problem ? @tr("Open diagnostics")
+        : root.kind == MessageKind.hotkey-taken ? @tr("Open settings")
         : "";
 
     title: "Typlet";
@@ -88,7 +94,7 @@ export component MessageWindow inherits Window {
                 wrap: word-wrap;
             }
 
-            if root.detail != "": TextEdit {
+            if root.show-detail: TextEdit {
                 text: root.detail;
                 read-only: true;
                 font-size: Theme.font-small;

@@ -54,11 +54,13 @@ For every cell check:
 - [ ] Clicking elsewhere in the middle of typing a trigger, then finishing it, does not expand.
 - [ ] Caps Lock on: triggers typed in capitals do not expand (unless a snippet uses capitals).
 - [ ] Holding Shift while finishing a trigger does not select text.
+- [ ] Typing a trigger fast and keeping its last key pressed a moment still inserts the complete text (`:mfg` → `Mit freundlichen Grüßen`, nothing missing).
 - [ ] Typing fast in a long text never expands inside normal words when triggers start with `:`.
 
 ## 4. Quick search and forms
 
-- [ ] `Ctrl+Shift+Space` opens the search near the mouse, with the cursor in the search field.
+- [ ] `Ctrl+Shift+Space` opens the search near the mouse, with the cursor in the search field. The app you were typing in receives no space.
+- [ ] Windows: a shortcut another program already uses (for example set the search shortcut to one of your apps' global shortcuts) shows "This shortcut is already in use" once; "Open settings" opens the editor's settings.
 - [ ] Typing filters instantly; umlauts and accents are ignored (`grusse` finds `Grüße`).
 - [ ] Arrow keys and Enter insert into the app that was active before; Esc returns there without inserting.
 - [ ] A snippet with a form (`:rr`/`:call`) opens the form; the trigger is removed.
@@ -79,7 +81,7 @@ For every cell check:
 - [ ] Editing or deleting a snippet file is picked up within a second.
 - [ ] A broken snippet file shows a notice; Diagnostics lists the file; other snippets keep working.
 - [ ] Starting Typlet a second time opens the editor or a notice, never a second copy.
-- [ ] Quit ends Typlet; the hook is gone (typing triggers does nothing).
+- [ ] Quit ends Typlet; typing triggers does nothing any more.
 
 ## 7. Editor
 

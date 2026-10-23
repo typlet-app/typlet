@@ -9,13 +9,14 @@ use std::fmt;
 use std::fs;
 use std::process::Command;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use evdev::KeyCode;
 use typlet_core::Key;
 use xkbcommon::xkb::{self, Keycode, compose};
 
 use super::devices::RawKey;
+use super::held::HeldKeys;
 use crate::{Event, Modifiers, Shared};
 
 /// An XKB layout selection.
@@ -226,7 +227,7 @@ fn is_keypad(code: u16) -> bool {
     matches!(code, 55 | 71..=83 | 96 | 98 | 117 | 118 | 121)
 }
 
-const MODIFIER_CODES: [KeyCode; 8] = [
+pub(super) const MODIFIER_CODES: [KeyCode; 8] = [
     KeyCode::KEY_LEFTCTRL,
     KeyCode::KEY_RIGHTCTRL,
     KeyCode::KEY_LEFTSHIFT,
@@ -290,7 +291,7 @@ pub(super) struct Translator {
     state: xkb::State,
     compose: Option<compose::State>,
     shared: Arc<Shared>,
-    held_count: Arc<AtomicU8>,
+    held_keys: Arc<HeldKeys>,
     caps_lock: Arc<AtomicBool>,
     held: [bool; 8],
     right_alt_is_altgr: bool,
@@ -300,7 +301,7 @@ impl Translator {
     pub(super) fn new(
         layout: &Layout,
         shared: Arc<Shared>,
-        held_count: Arc<AtomicU8>,
+        held_keys: Arc<HeldKeys>,
         caps_lock: Arc<AtomicBool>,
     ) -> Option<Self> {
         let keymap = compile(layout)?;
@@ -316,7 +317,7 @@ impl Translator {
             state,
             compose,
             shared,
-            held_count,
+            held_keys,
             caps_lock,
             held: [false; 8],
             right_alt_is_altgr,
@@ -414,11 +415,13 @@ impl Translator {
     }
 
     fn set_held(&mut self, key: KeyCode, down: bool) {
+        if down {
+            self.held_keys.press(key.0);
+        } else {
+            self.held_keys.release(key.0);
+        }
         if let Some(slot) = modifier_slot(key) {
             self.held[slot] = down;
-            let count = self.held.iter().filter(|h| **h).count();
-            self.held_count
-                .store(u8::try_from(count).unwrap_or(u8::MAX), Ordering::Release);
         }
         let caps = self
             .state
