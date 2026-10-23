@@ -27,11 +27,13 @@ BASE = f"http://localhost:{PORT}/"
 # Snippet ids from src/demo.ts.
 SIGNATURE = "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e03"
 FORM = "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e04"
+THANKS = "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e06"
 
 SHOTS = [
     ("editor.png", f"open={SIGNATURE}", None),
     ("editor-form.png", f"open={FORM}", None),
     ("editor-date.png", f"open={FORM}", ".chip-date"),
+    ("editor-nested.png", f"open={THANKS}", ".chip-snippet"),
     ("editor-settings.png", "settings", None),
     ("editor-update.png", "update", None),
 ]
