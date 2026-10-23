@@ -17,6 +17,7 @@ categories = ["text-processing", "accessibility"]
 [workspace.dependencies]
 typlet-core = { path = "crates/typlet-core" }
 typlet-platform = { path = "crates/typlet-platform" }
+typlet-import = { path = "crates/typlet-import" }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 crossbeam-channel = "0.5"
 directories = "6"
