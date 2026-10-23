@@ -1,0 +1,72 @@
+name: Test builds
+
+# Builds the background program for Windows and Linux so changes can be tried
+# on real machines before a release. Download the files from the "Artifacts"
+# section of a workflow run. The builds are unsigned (see docs/adr/0008).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Keep in sync with rust-toolchain.toml.
+  RUST_TOOLCHAIN: "1.97.0"
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-latest
+            artifact: typlet-windows-x64
+          # The oldest supported Ubuntu, so the binary runs on newer systems too.
+          - name: Linux x64
+            os: ubuntu-22.04
+            artifact: typlet-linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libxkbcommon-dev libfontconfig1-dev libwayland-dev
+      - name: Build
+        run: cargo build --release --locked -p typlet
+      - name: Collect files (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir dist
+          cp target/release/typlet.exe dist/
+          cp LICENSE docs/testing/test-build.md dist/
+      - name: Collect files (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir dist
+          cp target/release/typlet dist/
+          cp LICENSE docs/testing/test-build.md packaging/linux/60-typlet-uinput.rules dist/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/
+          retention-days: 30

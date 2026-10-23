@@ -1,0 +1,217 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Diagnostics: answers "why does Typlet not work in app X?" without showing
+// anything the user typed.
+
+import { Button, TextEdit, ScrollView } from "std-widgets.slint";
+import { Theme, StatusLine } from "theme.slint";
+
+export enum AttemptKind { typed, pasted, pasted-formatted, form-opened, undone, skipped-password, skipped-app, failed }
+
+export struct AttemptItem {
+    time: string,
+    app: string,
+    kind: AttemptKind,
+    detail: string,
+}
+
+component Section inherits VerticalLayout {
+    in property <string> title;
+    spacing: 6px;
+    Text {
+        text: root.title;
+        color: Theme.text;
+        font-size: Theme.font-body;
+        font-weight: 600;
+    }
+
+    @children
+}
+
+export component DiagnosticsWindow inherits Window {
+    in property <bool> keyboard-ok;
+    in property <bool> typing-ok;
+    in property <bool> focus-ok;
+    in property <bool> paused;
+    in property <int> snippet-count;
+    in property <string> problems;
+    in property <[string]> library-issues;
+    in property <[AttemptItem]> attempts;
+    in property <string> report;
+    in property <string> version;
+
+    callback refresh();
+    callback open-folder();
+    callback dismiss();
+
+    title: @tr("Typlet – diagnostics");
+    icon: @image-url("images/icon.png");
+    preferred-width: 620px;
+    min-width: 480px;
+    preferred-height: 600px;
+    background: Theme.surface;
+
+    VerticalLayout {
+        padding: Theme.padding-large;
+        spacing: Theme.padding;
+
+        HorizontalLayout {
+            Text {
+                text: @tr("Diagnostics");
+                color: Theme.text;
+                font-size: Theme.font-title;
+                font-weight: 600;
+                horizontal-stretch: 1;
+            }
+
+            Text {
+                text: "Typlet " + root.version;
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                vertical-alignment: center;
+            }
+        }
+
+        ScrollView {
+            vertical-stretch: 1;
+            VerticalLayout {
+                spacing: Theme.padding;
+                alignment: start;
+
+                Section {
+                    title: @tr("System");
+                    StatusLine {
+                        ok: root.keyboard-ok;
+                        title: root.keyboard-ok ? @tr("Keyboard input: available") : @tr("Keyboard input: not available");
+                    }
+
+                    StatusLine {
+                        ok: root.typing-ok;
+                        title: root.typing-ok ? @tr("Inserting text: available") : @tr("Inserting text: not available");
+                    }
+
+                    StatusLine {
+                        ok: root.focus-ok;
+                        title: root.focus-ok ? @tr("Active app detection: available") : @tr("Active app detection: not available on this desktop");
+                    }
+
+                    StatusLine {
+                        ok: !root.paused;
+                        title: root.paused ? @tr("Typlet is paused") : @tr("Typlet is active");
+                    }
+
+                    if root.problems != "": Text {
+                        text: root.problems;
+                        color: Theme.warning;
+                        font-size: Theme.font-small;
+                        wrap: word-wrap;
+                    }
+                }
+
+                Section {
+                    title: @tr("Snippets");
+                    StatusLine {
+                        ok: root.library-issues.length == 0;
+                        title: @tr("{n} snippet loaded" | "{n} snippets loaded" % root.snippet-count);
+                    }
+
+                    for issue in root.library-issues: Text {
+                        text: "• " + issue;
+                        color: Theme.warning;
+                        font-size: Theme.font-small;
+                        wrap: word-wrap;
+                    }
+                }
+
+                Section {
+                    title: @tr("Recent expansions");
+                    if root.attempts.length == 0: Text {
+                        text: @tr("Nothing yet. Type a trigger in the app that causes trouble, then click Refresh.");
+                        color: Theme.muted;
+                        font-size: Theme.font-small;
+                        wrap: word-wrap;
+                    }
+                    for attempt in root.attempts: HorizontalLayout {
+                        spacing: Theme.gap;
+                        Text {
+                            text: attempt.time;
+                            color: Theme.muted;
+                            font-size: Theme.font-small;
+                            width: 64px;
+                        }
+
+                        Text {
+                            text: attempt.app;
+                            color: Theme.text;
+                            font-size: Theme.font-small;
+                            width: 160px;
+                            overflow: elide;
+                        }
+
+                        Text {
+                            text: attempt.kind == AttemptKind.typed ? @tr("typed")
+                                : attempt.kind == AttemptKind.pasted ? @tr("pasted as plain text")
+                                : attempt.kind == AttemptKind.pasted-formatted ? @tr("pasted with formatting")
+                                : attempt.kind == AttemptKind.form-opened ? @tr("form opened")
+                                : attempt.kind == AttemptKind.undone ? @tr("undone with Backspace")
+                                : attempt.kind == AttemptKind.skipped-password ? @tr("skipped: password field")
+                                : attempt.kind == AttemptKind.skipped-app ? @tr("skipped: turned off for this app")
+                                : @tr("failed: {}", attempt.detail);
+                            color: attempt.kind == AttemptKind.failed ? Theme.error : Theme.text;
+                            font-size: Theme.font-small;
+                            wrap: word-wrap;
+                            horizontal-stretch: 1;
+                        }
+                    }
+                }
+
+                Section {
+                    title: @tr("Report for a bug report (contains no typed text)");
+                    report-field := TextEdit {
+                        text: root.report;
+                        read-only: true;
+                        font-family: "monospace";
+                        font-size: Theme.font-small;
+                        height: 140px;
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: Theme.gap;
+            Button {
+                text: @tr("Refresh");
+                clicked => {
+                    root.refresh();
+                }
+            }
+
+            Button {
+                text: @tr("Copy report");
+                clicked => {
+                    report-field.select-all();
+                    report-field.copy();
+                }
+            }
+
+            Button {
+                text: @tr("Open data folder");
+                clicked => {
+                    root.open-folder();
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            Button {
+                text: @tr("Close");
+                primary: true;
+                clicked => {
+                    root.dismiss();
+                }
+            }
+        }
+    }
+}

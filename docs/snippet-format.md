@@ -48,6 +48,7 @@ Typing `:sig` produces `Max Mustermann, 23.10.2026`.
 | `fields` | array of [Field](#fields) | no | `[]` | Form fields asked for before insertion. |
 | `enabled` | boolean | no | `true` | Disabled snippets are kept but never expand. |
 | `insert_mode` | `"auto"`, `"type"`, `"paste"` | no | `"auto"` | Overrides how the text is inserted ([rules](architecture.md#insertion-rules)). |
+| `hotkey` | string | no | none | A global shortcut that inserts the snippet without typing the trigger, for example `"Ctrl+Alt+M"`. See [hotkeys](#hotkeys). |
 
 Unknown fields are ignored, so newer files with extra optional data still load in older versions.
 
@@ -98,9 +99,22 @@ Formatted output never contains fonts or colours, so it adopts the style of the 
 
 A field may be referenced several times; the user fills it in once.
 
+A `yes_no` field inserts the word for *yes* or *no* in the interface language (`Ja`/`Nein` in German, `Yes`/`No` in English). Its `default` may be either language's word, `true` or `1` for yes; anything else means no. A `choice` field whose default is not one of its options starts with the first option.
+
+## Hotkeys
+
+A hotkey is written as modifiers and one key joined with `+`, for example `Ctrl+Alt+M`, `Ctrl+Shift+F5` or `Strg+Umschalt+Leertaste`.
+
+- Modifiers: `Ctrl` (`Strg`), `Alt`, `Shift` (`Umschalt`), `Meta` (`Win`, `Super`).
+- Keys: letters `A`–`Z`, digits `0`–`9`, `F1`–`F24`, `Space` (`Leertaste`), `Enter` (`Eingabe`), `Tab`, `Esc`, `Insert` (`Einfg`), `Delete` (`Entf`), `Home` (`Pos1`), `End` (`Ende`), `PageUp` (`BildAuf`), `PageDown` (`BildAb`).
+- At least one of `Ctrl`, `Alt` or `Meta` is required, except for function keys.
+- Files store the English form; the parser accepts both languages and ignores case and spaces.
+
+Implemented in [`hotkey.rs`](../crates/typlet-core/src/hotkey.rs). If two snippets (or a snippet and a built-in shortcut) use the same hotkey, only the first one works.
+
 ## More examples
 
-- [`examples/email/email-signature.json`](examples/email/email-signature.json): bold, italic and a link (category `email`)
+- [`examples/email/email-signature.json`](examples/email/email-signature.json): bold, italic, a link and a hotkey (category `email`)
 - [`examples/callback-note.json`](examples/callback-note.json): a form with text, choice and yes/no fields, a list and a cursor position
 
 ## Validation rules

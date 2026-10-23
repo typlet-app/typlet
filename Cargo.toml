@@ -15,7 +15,12 @@ keywords = ["text-expander", "snippets", "productivity", "typing"]
 categories = ["text-processing", "accessibility"]
 
 [workspace.dependencies]
+typlet-core = { path = "crates/typlet-core" }
+typlet-platform = { path = "crates/typlet-platform" }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+crossbeam-channel = "0.5"
+directories = "6"
+log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tempfile = "3"

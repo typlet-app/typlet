@@ -71,6 +71,7 @@ fn formatted_signature_is_pasted_with_all_flavours() {
     let out = render(mfg, &context(&HashMap::new())).unwrap();
     assert!(out.formatted);
     assert_eq!(out.insert_method(mfg.insert_mode), InsertMethod::Paste);
+    assert_eq!(mfg.hotkey, Some("Ctrl+Alt+M".parse().unwrap()));
     assert_eq!(
         out.plain,
         "Mit freundlichen Grüßen\n\nMax Mustermann\nMusterbetrieb GmbH\nwww.example.org"

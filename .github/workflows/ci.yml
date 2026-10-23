@@ -17,9 +17,12 @@ env:
   CARGO_TERM_COLOR: always
   # Keep in sync with rust-toolchain.toml.
   RUST_TOOLCHAIN: "1.97.0"
+  # Libraries the Linux build links against (keyboard layouts, fonts, Wayland).
+  LINUX_BUILD_DEPS: libxkbcommon-dev libfontconfig1-dev libwayland-dev
 
 jobs:
   fmt:
+    # The job name is a required status check in the branch rules; keep it.
     name: Format
     runs-on: ubuntu-latest
     steps:
@@ -29,6 +32,8 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt
       - run: cargo fmt --all --check
+      - name: Every interface text has a German translation
+        run: python3 scripts/check-translations.py
 
   check:
     name: Clippy and tests (${{ matrix.os }})
@@ -44,6 +49,9 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: clippy
       - uses: Swatinem/rust-cache@v2
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_BUILD_DEPS
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Tests
@@ -60,6 +68,8 @@ jobs:
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
       - uses: Swatinem/rust-cache@v2
+      - name: Install Linux build dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_BUILD_DEPS
       - run: cargo doc --workspace --no-deps --locked
 
   deny:

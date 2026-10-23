@@ -11,11 +11,14 @@ A friendly, open-source text expander for everyone — not just power users.
 [![CI](https://github.com/typlet-app/typlet/actions/workflows/ci.yml/badge.svg)](https://github.com/typlet-app/typlet/actions/workflows/ci.yml)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux-informational)
-![Status](https://img.shields.io/badge/status-pre--alpha-orange)
+![Status](https://img.shields.io/badge/status-alpha-orange)
+[![Test builds](https://github.com/typlet-app/typlet/actions/workflows/build.yml/badge.svg)](https://github.com/typlet-app/typlet/actions/workflows/build.yml)
 [![Rust](https://img.shields.io/badge/rust-1.97-dea584?logo=rust)](rust-toolchain.toml)
 
 [What is Typlet?](#-what-is-typlet) ·
 [Features](#-features) ·
+[Screenshots](#-screenshots) ·
+[User guide](docs/user-guide.md) ·
 [Roadmap](docs/roadmap.md) ·
 [Architecture](docs/architecture.md) ·
 [Contributing](CONTRIBUTING.md)
@@ -23,8 +26,8 @@ A friendly, open-source text expander for everyone — not just power users.
 </div>
 
 > [!WARNING]
-> Typlet is in early development and **not usable yet**. There is no installable release.
-> ⭐ Star or 👀 watch the repository to follow along.
+> Typlet is in early development. The background program works; the editor and installers are next.
+> Brave testers can try [unsigned test builds](docs/testing/test-build.md). ⭐ Star or 👀 watch the repository to follow along.
 
 ---
 
@@ -57,19 +60,31 @@ Tools like this already exist. The good free ones are powerful but expect you to
 | ⚡ Instant trigger matching, longest match wins, backspace to undo | ✅ |
 | ⚠️ Detection of conflicting abbreviations (e.g. `:c` vs `:cc`) | ✅ |
 | 💾 One file per snippet, folders as categories, crash-safe saving | ✅ |
-| ⌨️ Keyboard engine for Linux (Wayland) and Windows | 🗺️ |
-| 📋 Smart insertion: typing for short text, pasting for long or formatted text | 🗺️ |
-| 🔎 Quick search window and per-snippet hotkeys | 🗺️ |
-| 🧾 Fill-in forms before insertion | 🗺️ |
-| ✍️ Visual snippet editor | 🗺️ |
-| 🧭 Setup assistant, diagnostics, pause in password fields | 🗺️ |
+| ⌨️ Keyboard engine for Windows and Linux (Wayland and X11) | ✅ |
+| 📋 Smart insertion: typing for short text, pasting for long or formatted text, clipboard restored | ✅ |
+| 💬 App rules: Shift+Enter in chat apps, plain text in Excel, longer delays for browsers | ✅ |
+| 🔎 Quick search window and per-snippet hotkeys | ✅ |
+| 🧾 Fill-in forms before insertion | ✅ |
+| ✂️ New snippet from selected text | ✅ |
+| 🧭 Set-up assistant with test field | ✅ |
+| 🩺 Diagnostics with a privacy-safe report | ✅ |
+| 🔐 Pause in password fields (Windows) | ✅ |
+| 🌍 English and German interface | ✅ |
+| ✍️ Visual snippet editor with settings | 🗺️ |
 | 📥 Import from espanso | 🗺️ |
+| 📦 Installers, signed builds | 🗺️ |
 
 See the [roadmap](docs/roadmap.md) for milestones and what comes after V1 (macOS, sync, team libraries).
 
 ## 📸 Screenshots
 
-Typlet does not have a user interface yet. Screenshots of the editor, the quick search and the setup assistant will appear here as soon as they exist.
+| Quick search (`Ctrl+Shift+Space`) | Fill-in form |
+|---|---|
+| <img src="docs/images/en/search.png" width="420" alt="Quick search listing three snippets with their triggers"> | <img src="docs/images/en/form.png" width="340" alt="Form asking who called, the topic and whether to call back"> |
+| **Set-up assistant** | **New snippet from selection** (`Ctrl+Alt+S`) |
+| <img src="docs/images/en/setup-welcome.png" width="420" alt="Welcome page of the set-up assistant with example snippets"> | <img src="docs/images/en/new-snippet.png" width="340" alt="Window to save selected text as a snippet with a trigger"> |
+
+The interface is available in English and German ([German screenshots](docs/images/de)). The editor follows with milestone M4.
 
 ## 🧭 How it works
 
@@ -82,33 +97,39 @@ flowchart LR
     I -->|long or formatted| P[Paste HTML + RTF + text<br/>then restore clipboard]
 ```
 
-Typlet will run as a small native background program; a separate editor window opens only when you manage your snippets. Read more in [docs/architecture.md](docs/architecture.md).
+Typlet runs as a small native background program with a tray icon; a separate editor window opens only when you manage your snippets. Read more in [docs/architecture.md](docs/architecture.md).
 
 ## 🗂️ Repository layout
 
 ```text
 typlet/
 ├── crates/
-│   └── typlet-core/     # Platform-independent core: format, matching, rendering, storage
+│   ├── typlet-core/      # Platform-independent core: format, matching, rendering, search, storage
+│   ├── typlet-platform/  # Windows and Linux backends: keyboard, typing, clipboard, focus
+│   └── typlet/           # Background program: engine, tray, search, forms, set-up, diagnostics
 ├── docs/
-│   ├── adr/             # Architecture decision records
-│   ├── examples/        # Example snippet files (tested in CI)
-│   ├── architecture.md
-│   ├── development.md
-│   ├── roadmap.md
-│   └── snippet-format.md
-├── assets/              # Logo and artwork
-└── .github/             # CI, issue and pull request templates
+│   ├── adr/              # Architecture decision records
+│   ├── examples/         # Example snippet files (tested in CI)
+│   ├── images/           # Screenshots (generated, English and German)
+│   ├── testing/          # Test builds and the manual test checklist
+│   ├── architecture.md · design.md · development.md
+│   ├── roadmap.md · snippet-format.md
+│   └── user-guide.md · user-guide.de.md
+├── packaging/            # Files for installers (udev rule for Linux)
+├── scripts/              # Translation check, icon rendering
+├── assets/               # Logo and artwork
+└── .github/              # CI, test builds, issue and pull request templates
 ```
 
 ## 🛠️ Building from source
 
-You need [Rust via rustup](https://rustup.rs). The exact compiler version is pinned in [`rust-toolchain.toml`](rust-toolchain.toml) and installed automatically.
+You need [Rust via rustup](https://rustup.rs). The exact compiler version is pinned in [`rust-toolchain.toml`](rust-toolchain.toml) and installed automatically. On Linux, also install `libxkbcommon-dev libfontconfig1-dev libwayland-dev`.
 
 ```sh
 git clone https://github.com/typlet-app/typlet.git
 cd typlet
 cargo test --workspace
+cargo run -p typlet        # start the background program
 ```
 
 More commands, platform notes and conventions are in [docs/development.md](docs/development.md).
@@ -119,12 +140,13 @@ Contributions of all kinds are welcome: code, testing on your favourite apps, do
 
 ## 🔒 Privacy and security
 
-A text expander has to see what you type. These are binding design rules for the keyboard engine, which is still being built:
+A text expander has to see what you type. These rules are built into Typlet:
 
-- Only the last few characters are kept in memory, just enough to recognise an abbreviation (already true for the [matcher](crates/typlet-core/src/matcher.rs)).
-- Nothing you type is ever written to disk or logged.
-- The process that sees your keystrokes has no network access.
-- Typlet pauses automatically in password fields.
+- Only the last few characters are kept in memory, just enough to recognise an abbreviation ([matcher](crates/typlet-core/src/matcher.rs)).
+- Nothing you type or insert is ever written to disk or logged; diagnostics record app names and outcomes only.
+- The background program that sees your keystrokes has no network code.
+- Typlet pauses automatically in password fields (Windows; GNOME does not expose them yet).
+- Text Typlet puts on the clipboard stays out of the Windows clipboard history and cloud sync.
 
 Found a vulnerability? Please report it privately as described in [SECURITY.md](SECURITY.md).
 
@@ -136,4 +158,4 @@ The name and logo are covered by the [trademark policy](TRADEMARKS.md).
 ## 🙏 Acknowledgements
 
 - [espanso](https://espanso.org) showed how powerful an open-source text expander can be and inspired this project.
-- Built with [Rust](https://www.rust-lang.org); the user interface will use [Slint](https://slint.dev), [Tauri](https://tauri.app) and [Tiptap](https://tiptap.dev).
+- Built with [Rust](https://www.rust-lang.org) and [Slint](https://slint.dev); the editor will use [Tauri](https://tauri.app) and [Tiptap](https://tiptap.dev).

@@ -1,0 +1,387 @@
+# German translation of the Typlet background program.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Style: informal "du", short sentences, no technical terms.
+# Glossary: snippet = Textbaustein, trigger = Kürzel, tray = Infobereich.
+# Check completeness with: python3 scripts/check-translations.py
+msgid ""
+msgstr ""
+"Project-Id-Version: typlet\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Tray menu
+
+msgid "Typlet is paused"
+msgstr "Typlet ist pausiert"
+
+msgid "Typlet is active"
+msgstr "Typlet ist aktiv"
+
+msgid "Search snippets…"
+msgstr "Textbausteine suchen …"
+
+msgid "Search snippets…  ({})"
+msgstr "Textbausteine suchen …  ({})"
+
+msgid "New snippet…"
+msgstr "Neuer Textbaustein …"
+
+msgid "Open editor"
+msgstr "Editor öffnen"
+
+msgid "Open snippet folder"
+msgstr "Ordner mit Textbausteinen öffnen"
+
+msgid "Resume Typlet"
+msgstr "Typlet fortsetzen"
+
+msgid "Pause Typlet"
+msgstr "Typlet pausieren"
+
+msgid "Start with the computer"
+msgstr "Mit dem Computer starten"
+
+msgid "Set up and test…"
+msgstr "Einrichten und testen …"
+
+msgid "Diagnostics…"
+msgstr "Diagnose …"
+
+msgid "Help"
+msgstr "Hilfe"
+
+msgid "Quit Typlet"
+msgstr "Typlet beenden"
+
+# Quick search
+
+msgid "Typlet – search snippets"
+msgstr "Typlet – Textbausteine suchen"
+
+msgid "Search by name, trigger or text…"
+msgstr "Nach Name, Kürzel oder Text suchen …"
+
+msgid "Form"
+msgstr "Formular"
+
+msgid "You have no snippets yet."
+msgstr "Du hast noch keine Textbausteine."
+
+msgid "No snippet matches your search."
+msgstr "Kein Textbaustein passt zu deiner Suche."
+
+msgid "Create snippets in the editor"
+msgstr "Textbausteine im Editor anlegen"
+
+msgid "↑ ↓ choose  ·  Enter insert  ·  Esc close"
+msgstr "↑ ↓ auswählen  ·  Eingabe einfügen  ·  Esc schließen"
+
+# Forms
+
+msgid "Typlet – {}"
+msgstr "Typlet – {}"
+
+msgid "Yes"
+msgstr "Ja"
+
+msgid "No"
+msgstr "Nein"
+
+msgid "Ctrl+Enter inserts"
+msgstr "Strg+Eingabe fügt ein"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Insert"
+msgstr "Einfügen"
+
+# New snippet
+
+msgid "Typlet – new snippet"
+msgstr "Typlet – neuer Textbaustein"
+
+msgid "New snippet"
+msgstr "Neuer Textbaustein"
+
+msgid "Text"
+msgstr "Text"
+
+msgid "The text Typlet should insert"
+msgstr "Der Text, den Typlet einfügen soll"
+
+msgid "Trigger"
+msgstr "Kürzel"
+
+msgid "for example :hello"
+msgstr "zum Beispiel :hallo"
+
+msgid "Choose what you will type, for example :hello."
+msgstr "Wähle, was du tippen wirst, zum Beispiel :hallo."
+
+msgid "A trigger cannot contain spaces."
+msgstr "Ein Kürzel darf keine Leerzeichen enthalten."
+
+msgid "A trigger can have at most 64 characters."
+msgstr "Ein Kürzel darf höchstens 64 Zeichen lang sein."
+
+msgid "Another snippet already uses this trigger."
+msgstr "Ein anderer Textbaustein verwendet dieses Kürzel schon."
+
+msgid "Tip: start triggers with a character like : so they do not fire inside normal words."
+msgstr "Tipp: Beginne Kürzel mit einem Zeichen wie :, damit sie nicht mitten in normalen Wörtern auslösen."
+
+msgid "Name (optional)"
+msgstr "Name (optional)"
+
+msgid "Shown in the search"
+msgstr "Wird in der Suche angezeigt"
+
+msgid "The snippet could not be saved: {}"
+msgstr "Der Textbaustein konnte nicht gespeichert werden: {}"
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "Saved!"
+msgstr "Gespeichert!"
+
+msgid "Type"
+msgstr "Tippe"
+
+msgid "anywhere to insert it."
+msgstr "an beliebiger Stelle, um ihn einzufügen."
+
+msgid "Edit in the editor"
+msgstr "Im Editor bearbeiten"
+
+msgid "Done"
+msgstr "Fertig"
+
+# Set-up assistant
+
+msgid "Welcome to Typlet"
+msgstr "Willkommen bei Typlet"
+
+msgid "Typlet writes text for you. Type a short trigger such as {} anywhere – in emails, chats or documents – and Typlet replaces it with the full text."
+msgstr "Typlet schreibt Texte für dich. Tippe ein kurzes Kürzel wie {} – in E-Mails, Chats oder Dokumenten – und Typlet ersetzt es durch den ganzen Text."
+
+msgid "To get you started, Typlet created these example snippets:"
+msgstr "Für den Anfang hat Typlet diese Beispiel-Textbausteine angelegt:"
+
+msgid "Checking your computer"
+msgstr "Dein Computer wird geprüft"
+
+msgid "Typlet can see what you type."
+msgstr "Typlet erkennt, was du tippst."
+
+msgid "Typlet cannot read the keyboard yet."
+msgstr "Typlet kann die Tastatur noch nicht lesen."
+
+msgid "Typlet can insert text."
+msgstr "Typlet kann Text einfügen."
+
+msgid "Typlet cannot type into other apps yet."
+msgstr "Typlet kann noch nicht in andere Programme schreiben."
+
+msgid "Typlet recognises the active app."
+msgstr "Typlet erkennt das aktive Programm."
+
+msgid "Typlet cannot recognise the active app on this desktop."
+msgstr "Typlet kann das aktive Programm auf diesem Desktop nicht erkennen."
+
+msgid "Not a problem: snippets still work, only app-specific rules are unavailable."
+msgstr "Kein Problem: Textbausteine funktionieren trotzdem, nur Regeln für einzelne Programme fehlen."
+
+msgid "Run these commands once in a terminal, then log out and back in:"
+msgstr "Führe diese Befehle einmal in einem Terminal aus, melde dich dann ab und wieder an:"
+
+msgid "What to do:"
+msgstr "Was zu tun ist:"
+
+msgid "Check again"
+msgstr "Erneut prüfen"
+
+msgid "Try it"
+msgstr "Probier es aus"
+
+msgid "Click into the field and type"
+msgstr "Klicke in das Feld und tippe"
+
+msgid "Type here…"
+msgstr "Hier tippen …"
+
+msgid "✓ It works! Typlet replaced the trigger with the full text."
+msgstr "✓ Es funktioniert! Typlet hat das Kürzel durch den ganzen Text ersetzt."
+
+msgid "The text appears as soon as you finish typing the trigger."
+msgstr "Der Text erscheint, sobald du das Kürzel fertig getippt hast."
+
+msgid "This only works once the checks on the previous page pass."
+msgstr "Das funktioniert erst, wenn die Prüfungen auf der vorigen Seite erfolgreich sind."
+
+msgid "You are ready"
+msgstr "Alles bereit"
+
+msgid "Typlet keeps running in the background. You find it as an icon in the system tray, next to the clock."
+msgstr "Typlet läuft im Hintergrund weiter. Du findest es als Symbol im Infobereich neben der Uhr."
+
+msgid "Search all snippets with"
+msgstr "Alle Textbausteine durchsuchen mit"
+
+msgid "Create your own snippets in the editor – with formatting, today's date or fill-in forms."
+msgstr "Lege im Editor eigene Textbausteine an – mit Formatierung, dem heutigen Datum oder Formularen zum Ausfüllen."
+
+msgid "Start Typlet when the computer starts"
+msgstr "Typlet beim Start des Computers öffnen"
+
+msgid "Back"
+msgstr "Zurück"
+
+msgid "Skip"
+msgstr "Überspringen"
+
+msgid "Next"
+msgstr "Weiter"
+
+msgid "Finish"
+msgstr "Fertig"
+
+# Diagnostics
+
+msgid "Typlet – diagnostics"
+msgstr "Typlet – Diagnose"
+
+msgid "Diagnostics"
+msgstr "Diagnose"
+
+msgid "System"
+msgstr "System"
+
+msgid "Keyboard input: available"
+msgstr "Tastatureingabe: verfügbar"
+
+msgid "Keyboard input: not available"
+msgstr "Tastatureingabe: nicht verfügbar"
+
+msgid "Inserting text: available"
+msgstr "Text einfügen: verfügbar"
+
+msgid "Inserting text: not available"
+msgstr "Text einfügen: nicht verfügbar"
+
+msgid "Active app detection: available"
+msgstr "Erkennung des aktiven Programms: verfügbar"
+
+msgid "Active app detection: not available on this desktop"
+msgstr "Erkennung des aktiven Programms: auf diesem Desktop nicht verfügbar"
+
+msgid "Snippets"
+msgstr "Textbausteine"
+
+msgid "{n} snippet loaded"
+msgid_plural "{n} snippets loaded"
+msgstr[0] "{n} Textbaustein geladen"
+msgstr[1] "{n} Textbausteine geladen"
+
+msgid "Recent expansions"
+msgstr "Letzte Einfügungen"
+
+msgid "Nothing yet. Type a trigger in the app that causes trouble, then click Refresh."
+msgstr "Noch nichts. Tippe ein Kürzel in dem Programm, das Probleme macht, und klicke dann auf Aktualisieren."
+
+msgid "typed"
+msgstr "getippt"
+
+msgid "pasted as plain text"
+msgstr "als reiner Text eingefügt"
+
+msgid "pasted with formatting"
+msgstr "mit Formatierung eingefügt"
+
+msgid "form opened"
+msgstr "Formular geöffnet"
+
+msgid "undone with Backspace"
+msgstr "mit Rücktaste rückgängig gemacht"
+
+msgid "skipped: password field"
+msgstr "übersprungen: Passwortfeld"
+
+msgid "skipped: turned off for this app"
+msgstr "übersprungen: für dieses Programm ausgeschaltet"
+
+msgid "failed: {}"
+msgstr "fehlgeschlagen: {}"
+
+msgid "Report for a bug report (contains no typed text)"
+msgstr "Bericht für eine Fehlermeldung (enthält keinen getippten Text)"
+
+msgid "Refresh"
+msgstr "Aktualisieren"
+
+msgid "Copy report"
+msgstr "Bericht kopieren"
+
+msgid "Open data folder"
+msgstr "Datenordner öffnen"
+
+msgid "Close"
+msgstr "Schließen"
+
+# Messages
+
+msgid "Typlet is already running"
+msgstr "Typlet läuft bereits"
+
+msgid "No text selected"
+msgstr "Kein Text markiert"
+
+msgid "The snippet could not be inserted"
+msgstr "Der Textbaustein konnte nicht eingefügt werden"
+
+msgid "Typlet cannot read the keyboard"
+msgstr "Typlet kann die Tastatur nicht lesen"
+
+msgid "Some snippets could not be loaded"
+msgstr "Einige Textbausteine konnten nicht geladen werden"
+
+msgid "The settings could not be read"
+msgstr "Die Einstellungen konnten nicht gelesen werden"
+
+msgid "The editor is not installed"
+msgstr "Der Editor ist nicht installiert"
+
+msgid "You find Typlet as an icon in the system tray, next to the clock."
+msgstr "Du findest Typlet als Symbol im Infobereich neben der Uhr."
+
+msgid "Select some text first, then press the shortcut again. Typlet turns the selection into a new snippet."
+msgstr "Markiere zuerst einen Text und drücke dann die Tastenkombination erneut. Typlet macht daraus einen neuen Textbaustein."
+
+msgid "The app may be running as administrator, or it blocks simulated typing. Diagnostics shows what happened."
+msgstr "Das Programm läuft vielleicht als Administrator oder blockiert simulierte Eingaben. Die Diagnose zeigt, was passiert ist."
+
+msgid "Without keyboard access, triggers cannot expand. The set-up assistant explains how to fix this."
+msgstr "Ohne Zugriff auf die Tastatur können Kürzel nicht ersetzt werden. Der Einrichtungsassistent erklärt, wie du das behebst."
+
+msgid "The other snippets work normally. Diagnostics lists the affected files."
+msgstr "Die anderen Textbausteine funktionieren normal. Die Diagnose listet die betroffenen Dateien auf."
+
+msgid "Typlet uses the default settings until the file is fixed."
+msgstr "Typlet verwendet die Standardeinstellungen, bis die Datei repariert ist."
+
+msgid "Typlet opens your snippet folder instead."
+msgstr "Typlet öffnet stattdessen den Ordner mit deinen Textbausteinen."
+
+msgid "Open set-up assistant"
+msgstr "Einrichtungsassistent öffnen"
+
+msgid "Open diagnostics"
+msgstr "Diagnose öffnen"
+
+msgid "OK"
+msgstr "OK"

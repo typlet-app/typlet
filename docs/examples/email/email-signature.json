@@ -3,6 +3,7 @@
   "id": "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e02",
   "trigger": ":mfg",
   "label": "Formatted e-mail signature",
+  "hotkey": "Ctrl+Alt+M",
   "content": {
     "blocks": [
       {
