@@ -160,6 +160,9 @@ pub enum ValidationError {
     /// A choice field has no options.
     #[error("the choice field `{0}` has no options")]
     EmptyChoice(String),
+    /// The snippet includes itself.
+    #[error("the snippet includes itself")]
+    IncludesItself,
 }
 
 impl Snippet {
@@ -219,6 +222,9 @@ impl Snippet {
                 }
                 Inline::Field { name } if !field_names.contains(name.as_str()) => {
                     return Err(ValidationError::UndefinedField(name.clone()));
+                }
+                Inline::Snippet { id } if *id == self.id => {
+                    return Err(ValidationError::IncludesItself);
                 }
                 _ => {}
             }

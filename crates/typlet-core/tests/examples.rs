@@ -8,13 +8,13 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use chrono::NaiveDate;
-use typlet_core::{DateLanguage, InsertMethod, Library, RenderContext, render};
+use typlet_core::{DateLanguage, InsertMethod, Library, RenderContext, Snippet, render};
 
 fn examples_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/examples")
 }
 
-fn context(fields: &HashMap<String, String>) -> RenderContext<'_> {
+fn context<'a>(fields: &'a HashMap<String, String>, snippets: &'a [Snippet]) -> RenderContext<'a> {
     RenderContext {
         now: NaiveDate::from_ymd_opt(2026, 10, 23)
             .unwrap()
@@ -23,7 +23,17 @@ fn context(fields: &HashMap<String, String>) -> RenderContext<'_> {
         clipboard: Some("Zwischenablage"),
         fields,
         date_language: DateLanguage::German,
+        snippets,
     }
+}
+
+fn all_examples() -> Vec<Snippet> {
+    Library::new(examples_dir())
+        .load()
+        .snippets
+        .into_iter()
+        .map(|loaded| loaded.snippet)
+        .collect()
 }
 
 #[test]
@@ -34,7 +44,7 @@ fn all_documented_examples_load_without_errors() {
         "broken examples: {:?}",
         report.errors
     );
-    assert_eq!(report.snippets.len(), 3);
+    assert_eq!(report.snippets.len(), 4);
 
     let email = report
         .snippets
@@ -54,7 +64,7 @@ fn signature_with_date_renders_as_typed_text() {
         .unwrap()
         .snippet;
 
-    let out = render(sig, &context(&HashMap::new())).unwrap();
+    let out = render(sig, &context(&HashMap::new(), &[])).unwrap();
     assert_eq!(out.plain, "Max Mustermann, 23.10.2026");
     assert_eq!(out.insert_method(sig.insert_mode), InsertMethod::Type);
 }
@@ -69,7 +79,7 @@ fn formatted_signature_is_pasted_with_all_flavours() {
         .unwrap()
         .snippet;
 
-    let out = render(mfg, &context(&HashMap::new())).unwrap();
+    let out = render(mfg, &context(&HashMap::new(), &[])).unwrap();
     assert!(out.formatted);
     assert_eq!(out.insert_method(mfg.insert_mode), InsertMethod::Paste);
     assert_eq!(mfg.hotkey, Some("Ctrl+Alt+M".parse().unwrap()));
@@ -99,10 +109,26 @@ fn callback_form_uses_entered_values_and_defaults() {
     values.insert("caller".to_owned(), "Frau Beispiel".to_owned());
     values.insert("reason".to_owned(), "Termin".to_owned());
 
-    let out = render(rr, &context(&values)).unwrap();
+    let out = render(rr, &context(&values, &[])).unwrap();
     assert_eq!(
         out.plain,
         "Rückruf vom 23.10.2026, 09:42\n• Anrufer: Frau Beispiel\n• Anliegen: Termin\n• Rückruf erwünscht: Ja\nNotiz: "
     );
     assert_eq!(out.cursor_from_end, Some(0));
+}
+
+#[test]
+fn thanks_includes_the_formatted_signature() {
+    let library = all_examples();
+    let thanks = library.iter().find(|s| s.trigger == ":danke").unwrap();
+    assert_eq!(typlet_core::nesting::check(thanks, &library), Ok(()));
+
+    let out = render(thanks, &context(&HashMap::new(), &library)).unwrap();
+    assert_eq!(
+        out.plain,
+        "Vielen Dank für Ihre Anfrage. Wir melden uns bis Sonntag.\n\nMit freundlichen Grüßen\n\nMax Mustermann\nMusterbetrieb GmbH\nwww.example.org"
+    );
+    // The signature's formatting makes the whole text formatted.
+    assert!(out.formatted);
+    assert!(out.html.contains("<strong>Max Mustermann</strong>"));
 }

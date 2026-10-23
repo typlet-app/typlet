@@ -50,6 +50,7 @@ Typlet V1 targets **Windows** as the polished product and **Linux (Wayland)** at
 - [ ] Code signing via SignPath *(workflow ready; needs the SignPath account, see [releasing](releasing.md#code-signing))*
 - [ ] Microsoft Store submission *(steps in [releasing](releasing.md#microsoft-store))*
 - [x] Screenshots and user guide in the README
+- [x] Snippets inside snippets, also imported from espanso's nested matches
 - [ ] First beta release `0.1.0`, after the [manual tests](testing/manual-test-checklist.md) on Windows and Linux with the installers built by CI ([releasing](releasing.md))
 
 ## After V1

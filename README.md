@@ -59,6 +59,7 @@ The [user guide](docs/user-guide.md#installing) ([Deutsch](docs/user-guide.de.md
 | Multi-line text | Breaks in some apps | 📋 Pasted reliably, clipboard restored afterwards |
 | Forgot the abbreviation? | Look it up in the file | 🔎 Quick search window |
 | Fill-in forms | Config syntax | 🧾 Fields, dropdowns and yes/no, built visually |
+| Reusing parts | Nested variables in a config file | 🧩 Insert one snippet into another with a click |
 | Setup | Manual | 🧭 Guided assistant with a test field |
 | Privacy | Varies | 🔒 Local only, no network in the keystroke process |
 
@@ -84,6 +85,7 @@ The [user guide](docs/user-guide.md#installing) ([Deutsch](docs/user-guide.de.md
 | 🔐 Pause in password fields (Windows) | ✅ |
 | 🌍 English and German interface | ✅ |
 | ✍️ Visual snippet editor: formatting, placeholder chips, forms, live preview | ✅ |
+| 🧩 Snippets inside snippets: write a signature once, use it everywhere | ✅ |
 | ⚙️ Settings and app rules in the editor | ✅ |
 | 📥 Import from espanso | ✅ |
 | 📦 Installers: Windows (per user), Debian package, AppImage | ✅ |

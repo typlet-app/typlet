@@ -23,6 +23,9 @@ function snippet(id: number, trigger: string, label: string, blocks: Block[], ex
   };
 }
 
+/** The e-mail signature, which the "thanks" snippet includes. */
+const SIGNATURE = "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e03";
+
 const de: LoadedSnippet[] = [
   { category: [], path: "", snippet: snippet(1, ":mfg", "Grußformel", [{ type: "paragraph", content: [text("Mit freundlichen Grüßen")] }]) },
   { category: [], path: "", snippet: snippet(2, ":datum", "Heutiges Datum", [{ type: "paragraph", content: [{ type: "date_time", format: "%d.%m.%Y" }] }]) },
@@ -63,7 +66,15 @@ const de: LoadedSnippet[] = [
     ),
   },
   { category: ["Kunden"], path: "", snippet: snippet(5, ":adr", "Firmenadresse", [{ type: "paragraph", content: [text("Musterfirma GmbH")] }, { type: "paragraph", content: [text("Musterstraße 1")] }, { type: "paragraph", content: [text("12345 Musterstadt")] }]) },
-  { category: ["Kunden"], path: "", snippet: snippet(6, ":danke", "Dank für Anfrage", [{ type: "paragraph", content: [text("Vielen Dank für Ihre Anfrage. Wir melden uns innerhalb von zwei Werktagen.")] }]) },
+  {
+    category: ["Kunden"],
+    path: "",
+    snippet: snippet(6, ":danke", "Dank für Anfrage", [
+      { type: "paragraph", content: [text("Vielen Dank für Ihre Anfrage. Wir melden uns innerhalb von zwei Werktagen.")] },
+      { type: "paragraph", content: [] },
+      { type: "paragraph", content: [{ type: "snippet", id: SIGNATURE }] },
+    ]),
+  },
 ];
 
 const en: LoadedSnippet[] = [
@@ -106,7 +117,15 @@ const en: LoadedSnippet[] = [
     ),
   },
   { category: ["Customers"], path: "", snippet: snippet(5, ":addr", "Company address", [{ type: "paragraph", content: [text("Example Ltd")] }, { type: "paragraph", content: [text("1 Example Street")] }, { type: "paragraph", content: [text("Springfield")] }]) },
-  { category: ["Customers"], path: "", snippet: snippet(6, ":thx", "Thanks for the request", [{ type: "paragraph", content: [text("Thank you for your request. We will get back to you within two working days.")] }]) },
+  {
+    category: ["Customers"],
+    path: "",
+    snippet: snippet(6, ":thx", "Thanks for the request", [
+      { type: "paragraph", content: [text("Thank you for your request. We will get back to you within two working days.")] },
+      { type: "paragraph", content: [] },
+      { type: "paragraph", content: [{ type: "snippet", id: SIGNATURE }] },
+    ]),
+  },
 ];
 
 const library = german ? de : en;
@@ -127,7 +146,11 @@ const settings: Settings = {
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** A small stand-in for the Rust renderer. */
-function renderHtml(s: Snippet): { html: string; plain: string } {
+function renderHtml(s: Snippet, depth = 0): { html: string; plain: string } {
+  const included = (id: string) => {
+    const found = library.find((l) => l.snippet.id === id)?.snippet;
+    return found && depth < 5 ? renderHtml(found, depth + 1).html : "…";
+  };
   const inline = (i: Inline): string => {
     switch (i.type) {
       case "text": {
@@ -149,13 +172,18 @@ function renderHtml(s: Snippet): { html: string; plain: string } {
         return "📋";
       case "cursor":
         return "";
+      case "snippet":
+        // Inside text, the included snippet's paragraphs become lines.
+        return included(i.id).replace(/<\/p><p>/g, "<br>").replace(/<\/?p>/g, "");
     }
   };
   const run = (inlines: Inline[] | undefined) => (inlines ?? []).map(inline).join("");
   const html = s.content.blocks
     .map((b) =>
       b.type === "paragraph"
-        ? `<p>${run(b.content)}</p>`
+        ? b.content?.length === 1 && b.content[0]?.type === "snippet"
+          ? included(b.content[0].id)
+          : `<p>${run(b.content) || "<br>"}</p>`
         : `<${b.type === "bullet_list" ? "ul" : "ol"}>${b.items.map((item) => `<li>${run(item)}</li>`).join("")}</${b.type === "bullet_list" ? "ul" : "ol"}>`,
     )
     .join("");

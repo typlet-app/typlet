@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { fromTiptap, hasCursor, toTiptap, usedFields } from "./convert";
+import { fromTiptap, hasCursor, includedIds, toTiptap, usedFields } from "./convert";
 import type { Snippet, TypletDocument } from "./types";
 
 /** All documented example snippets (docs/examples), which CI also renders in Rust. */
@@ -37,6 +37,7 @@ describe("conversion between Typlet and Tiptap", () => {
             { type: "cursor" },
             { type: "clipboard" },
             { type: "field", name: "who" },
+            { type: "snippet", id: "019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e02" },
           ],
         },
       ],
@@ -138,6 +139,10 @@ describe("conversion between Typlet and Tiptap", () => {
       ],
     };
     expect(usedFields(doc)).toEqual(["b", "a"]);
+    expect(includedIds(doc)).toEqual([]);
+    expect(
+      includedIds({ blocks: [{ type: "bullet_list", items: [[{ type: "snippet", id: "x" }], [{ type: "snippet", id: "x" }]] }] }),
+    ).toEqual(["x"]);
     expect(hasCursor(doc)).toBe(true);
     expect(hasCursor({ blocks: [] })).toBe(false);
   });

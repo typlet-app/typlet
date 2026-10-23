@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from "react";
 import { useT } from "../i18n";
-import { normalise, previewText } from "../text";
+import { matchesSearch, searchWords } from "../text";
 import type { LoadedSnippet } from "../types";
 
 interface Props {
@@ -24,12 +24,8 @@ export function Sidebar(props: Props) {
   const [query, setQuery] = useState("");
 
   const groups = useMemo(() => {
-    const words = normalise(query).split(/\s+/).filter(Boolean);
-    const matches = props.snippets.filter(({ snippet }) => {
-      if (words.length === 0) return true;
-      const haystack = normalise(`${snippet.trigger} ${snippet.label} ${previewText(snippet.content)}`);
-      return words.every((word) => haystack.includes(word));
-    });
+    const words = searchWords(query);
+    const matches = props.snippets.filter(({ snippet }) => matchesSearch(snippet, words));
     const byCategory = new Map<string, LoadedSnippet[]>();
     for (const item of matches) {
       const key = item.category.join(" / ");

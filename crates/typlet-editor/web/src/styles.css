@@ -17,6 +17,8 @@
   --selected: #e8e6fd;
   --chip: #ede9fe;
   --chip-text: #4c1d95;
+  --chip-snippet: #dcfce7;
+  --chip-snippet-text: #14532d;
   --success: #15803d;
   --warning: #b45309;
   --error: #b91c1c;
@@ -42,6 +44,8 @@
     --selected: #3730a3;
     --chip: #312e81;
     --chip-text: #e0e7ff;
+    --chip-snippet: #14532d;
+    --chip-snippet-text: #dcfce7;
     --success: #4ade80;
     --warning: #fbbf24;
     --error: #f87171;
@@ -802,4 +806,54 @@ button.danger,
   height: 100%;
   background: linear-gradient(90deg, var(--brand), var(--brand-end));
   transition: width 0.2s ease;
+}
+
+/* ----- snippets inside snippets ----- */
+
+.chip-snippet {
+  background: var(--chip-snippet);
+  color: var(--chip-snippet-text);
+}
+
+.chip-snippet-missing {
+  background: transparent;
+  color: var(--error);
+  border: 1px dashed var(--error);
+}
+
+.snippet-picker {
+  align-items: flex-start;
+}
+
+.picker-list {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.picker-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker-item:hover,
+.picker-item:focus-visible {
+  border-color: var(--accent);
+}
+
+.picker-trigger {
+  color: var(--muted);
 }

@@ -19,7 +19,8 @@ use chrono::NaiveDateTime;
 use crossbeam_channel::{Receiver, Sender};
 use typlet_core::{
     Action, DateLanguage, EffectiveRule, Hotkey, Input, InsertMethod, InsertedText, Matcher,
-    Outcome, RenderContext, Settings, Snippet, SnippetId, plan_expansion, plan_undo, render,
+    Outcome, RenderContext, Settings, Snippet, SnippetId, nesting, plan_expansion, plan_undo,
+    render,
 };
 use typlet_platform::{Backend, Event, InjectOptions, Platform, PlatformError};
 
@@ -416,7 +417,7 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
             self.matcher.feed(Input::Reset);
             return;
         };
-        if snippet.fields.is_empty() {
+        if !self.has_form(&snippet) {
             self.insert(&snippet, &HashMap::new(), &snippet.trigger, app, &rule);
         } else {
             self.open_form(&snippet, &snippet.trigger, app, &rule);
@@ -446,13 +447,18 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
                 let Some((app, rule)) = self.target() else {
                     return;
                 };
-                if snippet.fields.is_empty() {
+                if !self.has_form(&snippet) {
                     self.insert(&snippet, &HashMap::new(), "", app, &rule);
                 } else {
                     self.open_form(&snippet, "", app, &rule);
                 }
             }
         }
+    }
+
+    /// `true` if the snippet or a snippet it includes has form fields.
+    fn has_form(&self, snippet: &Snippet) -> bool {
+        !nesting::form_fields(snippet, &self.library.snippets).is_empty()
     }
 
     /// Checks whether Typlet may insert into the focused app and returns the
@@ -525,12 +531,13 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
         app: Option<String>,
         rule: &EffectiveRule,
     ) {
-        let clipboard = if snippet.content.uses_clipboard() {
+        let library = Arc::clone(&self.library);
+        let clipboard = if nesting::uses_clipboard(snippet, &library.snippets) {
             self.backend.clipboard_text()
         } else {
             None
         };
-        let fields = with_defaults(snippet, fields);
+        let fields = with_defaults(snippet, &library.snippets, fields);
         let date_language = if crate::app::is_german(&self.settings) {
             DateLanguage::German
         } else {
@@ -541,6 +548,7 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
             clipboard: clipboard.as_deref(),
             fields: &fields,
             date_language,
+            snippets: &library.snippets,
         };
         let rendered = match render(snippet, &context) {
             Ok(rendered) => rendered,
@@ -598,9 +606,15 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
 
 /// Fills in defaults (or empty text) for fields without a value, so a form
 /// that was skipped never makes rendering fail.
-fn with_defaults(snippet: &Snippet, fields: &HashMap<String, String>) -> HashMap<String, String> {
+/// The entered values, completed with the defaults of every field the
+/// snippet and the snippets it includes ask for.
+fn with_defaults(
+    snippet: &Snippet,
+    library: &[Snippet],
+    fields: &HashMap<String, String>,
+) -> HashMap<String, String> {
     let mut values = fields.clone();
-    for field in &snippet.fields {
+    for field in nesting::form_fields(snippet, library) {
         values
             .entry(field.name.clone())
             .or_insert_with(|| field.default.clone().unwrap_or_default());
@@ -887,6 +901,54 @@ mod tests {
             vec![Action::Type("Call Anna".into())]
         );
         assert_eq!(log.borrow().restored, 1);
+    }
+
+    #[test]
+    fn included_snippets_are_inserted_and_bring_their_form() {
+        // A switched-off snippet can still be included: its trigger is off,
+        // but it works as a building block.
+        let mut greeting = plain(":gruss", "Best regards");
+        greeting.enabled = false;
+        let thanks = Snippet::new(
+            ":thanks",
+            "Thanks",
+            Document {
+                blocks: vec![Block::Paragraph {
+                    content: vec![
+                        Inline::text("Thanks! "),
+                        Inline::Snippet { id: greeting.id },
+                    ],
+                }],
+            },
+        );
+        let callback = form_snippet();
+        let wrapper = Snippet::new(
+            ":wrap",
+            "Wrapper",
+            Document {
+                blocks: vec![Block::Paragraph {
+                    content: vec![Inline::Snippet { id: callback.id }],
+                }],
+            },
+        );
+        let wrapper_id = wrapper.id;
+        let (mut engine, log, notices) = setup(
+            vec![greeting, thanks, callback, wrapper],
+            Settings::default(),
+            Fake::default(),
+        );
+
+        type_text(&mut engine, ":gruss :thanks");
+        assert_eq!(log.borrow().actions.len(), 1);
+        assert_eq!(
+            log.borrow().actions[0][1],
+            Action::Type("Thanks! Best regards".into())
+        );
+
+        // The included callback note has a field, so the wrapper's form
+        // opens first and asks for it.
+        type_text(&mut engine, " :wrap");
+        assert_eq!(*notices.borrow(), vec![Notice::ShowForm(wrapper_id)]);
     }
 
     #[test]

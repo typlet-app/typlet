@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Placeholders as chips in the rich-text editor: date, cursor, clipboard and
-// form fields. Node names and attributes match convert.ts.
+// Placeholders as chips in the rich-text editor: date, cursor, clipboard,
+// form fields and other snippets. Node names and attributes match convert.ts.
 
 import { mergeAttributes, Node } from "@tiptap/core";
 import { NodeViewWrapper, ReactNodeViewRenderer, type ReactNodeViewProps } from "@tiptap/react";
@@ -10,10 +10,13 @@ import { Placeholder } from "@tiptap/extensions";
 import { NODE } from "../convert";
 import { useLang, useT } from "../i18n";
 import { shiftedToday, strftime } from "../strftime";
-import type { FieldDef } from "../types";
+import type { FieldDef, Snippet } from "../types";
 
 /** The snippet's fields, so field chips can show their labels. */
 export const FieldsContext = createContext<FieldDef[]>([]);
+
+/** All snippets of the library, so included snippets show their names. */
+export const SnippetsContext = createContext<Snippet[]>([]);
 
 function Chip(props: { kind: string; icon: string; label: string; selected: boolean; title?: string }) {
   return (
@@ -69,6 +72,22 @@ function FieldChip({ node, selected }: ReactNodeViewProps) {
   );
 }
 
+function SnippetChip({ node, selected }: ReactNodeViewProps) {
+  const t = useT();
+  const snippets = useContext(SnippetsContext);
+  const id = String(node.attrs["id"] ?? "");
+  const included = snippets.find((s) => s.id === id);
+  return (
+    <Chip
+      kind={included ? "snippet" : "snippet-missing"}
+      icon="🧩"
+      label={included ? included.label || included.trigger : t("chip_snippet_missing")}
+      selected={selected}
+      title={included ? t("chip_snippet_title", { trigger: included.trigger }) : t("chip_snippet_missing_title")}
+    />
+  );
+}
+
 function placeholderNode(name: string, view: (props: ReactNodeViewProps) => React.JSX.Element, attrs = {}) {
   return Node.create({
     name,
@@ -99,6 +118,7 @@ export const DateTimeNode = placeholderNode(NODE.dateTime, DateChip, {
 export const CursorNode = placeholderNode(NODE.cursor, CursorChip);
 export const ClipboardNode = placeholderNode(NODE.clipboard, ClipboardChip);
 export const FieldNode = placeholderNode(NODE.field, FieldChip, { name: { default: "" } });
+export const SnippetNode = placeholderNode(NODE.snippet, SnippetChip, { id: { default: "" } });
 
 /** Everything the snippet editor needs, limited to what Typlet can store. */
 export function extensions(placeholder: string) {
@@ -123,5 +143,6 @@ export function extensions(placeholder: string) {
     CursorNode,
     ClipboardNode,
     FieldNode,
+    SnippetNode,
   ];
 }
