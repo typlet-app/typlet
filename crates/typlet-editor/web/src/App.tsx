@@ -295,7 +295,7 @@ export function App() {
             />
           )}
           {page === "settings" && (
-            <SettingsPage settings={settings} libraryPath={info?.library ?? ""} onCheckUpdates={() => void switchPage("update")} onSaved={(next) => {
+            <SettingsPage settings={settings} libraryPath={info?.library ?? ""} version={info?.version ?? ""} onCheckUpdates={() => void switchPage("update")} onSaved={(next) => {
               setSettings(next);
               setSettingsError(null);
               void refreshInfo().then(reload);
@@ -356,6 +356,12 @@ function Home(props: {
         <li>{t("tip_placeholders")}</li>
         <li>{t("tip_search")}</li>
       </ul>
+      <p className="muted small">
+        {t("home_donate")}{" "}
+        <button type="button" className="link-button" onClick={() => void api.openLink("donate")}>
+          {t("donate")}
+        </button>
+      </p>
       {props.errors.length > 0 && (
         <section className="panel">
           <h3>{t("library_errors")}</h3>

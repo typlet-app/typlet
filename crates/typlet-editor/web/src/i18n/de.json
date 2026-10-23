@@ -1,4 +1,6 @@
 {
+  "about": "Über Typlet",
+  "about_text": "Typlet {version} ist kostenlos und quelloffen. Wenn es dir Zeit spart, kannst du die Weiterentwicklung unterstützen.",
   "advanced": "Erweitert",
   "app_rules": "Regeln für Programme",
   "app_rules_help": "Lege fest, wie sich Typlet in einzelnen Programmen verhält, erkennbar am Dateinamen (zum Beispiel programm.exe). Eingebaute Regeln gibt es schon für {apps}. Regeln für Programme funktionieren unter Windows; GNOME verrät Typlet nicht, welches Programm aktiv ist.",
@@ -39,6 +41,7 @@
   "delete_confirm": "„{label}“ löschen? Das lässt sich nicht rückgängig machen.",
   "delete_confirm_used": "„{label}“ löschen? Er wird in {users} verwendet und fehlt dann dort. Das lässt sich nicht rückgängig machen.",
   "discard_changes": "Du hast ungespeicherte Änderungen. Verwerfen?",
+  "donate": "❤️ Typlet unterstützen",
   "duplicate": "Duplizieren",
   "editor_placeholder": "Tippe den Text, den Typlet einfügen soll …",
   "enabled": "Aktiv",
@@ -59,6 +62,7 @@
   "form_fields": "Formular",
   "form_fields_help": "Typlet stellt diese Fragen, bevor der Textbaustein eingefügt wird.",
   "home_count": "Du hast {count} Textbausteine. Wähle links einen aus oder lege einen neuen an.",
+  "home_donate": "Typlet ist kostenlos. Spart es dir Zeit?",
   "home_empty": "Du hast noch keine Textbausteine. Lege deinen ersten an oder übernimm sie aus espanso.",
   "home_title": "Deine Textbausteine",
   "hotkey_clear": "Entfernen",

@@ -22,7 +22,8 @@ A friendly, open-source text expander for everyone — not just power users.
 [User guide](docs/user-guide.md) ·
 [Roadmap](docs/roadmap.md) ·
 [Architecture](docs/architecture.md) ·
-[Contributing](CONTRIBUTING.md)
+[Contributing](CONTRIBUTING.md) ·
+[Support ❤️](#️-support-typlet)
 
 </div>
 
@@ -163,6 +164,14 @@ More commands, platform notes and conventions are in [docs/development.md](docs/
 ## 🤝 Contributing
 
 Contributions of all kinds are welcome: code, testing on your favourite apps, documentation, translations and ideas. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first. Contributors sign a short [Contributor License Agreement](CLA.md) once, directly in the pull request.
+
+## ❤️ Support Typlet
+
+Typlet is free, has no ads and collects no data. It is funded by donations: if it saves you time, you can support its development on [Ko-fi](https://ko-fi.com/finnbach) (also from the tray menu and the editor's settings).
+
+[![Support Typlet on Ko-fi](https://img.shields.io/badge/Ko--fi-support%20Typlet-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/finnbach)
+
+Testing on your favourite apps, reporting problems and telling others about Typlet help just as much.
 
 ## 🔒 Privacy and security
 

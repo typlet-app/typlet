@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// All settings: language, start-up, shortcuts, snippet folder, app rules.
+// All settings: language, start-up, updates, shortcuts, snippet folder, app
+// rules, and a short "about" section.
 
 import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
@@ -11,6 +12,7 @@ import { HotkeyInput } from "./HotkeyInput";
 interface Props {
   settings: Settings;
   libraryPath: string;
+  version: string;
   onSaved: (settings: Settings) => void;
   onCheckUpdates: () => void;
 }
@@ -27,7 +29,7 @@ const BUILT_IN = [
   "mstsc.exe",
 ];
 
-export function SettingsPage({ settings: initial, libraryPath, onSaved, onCheckUpdates }: Props) {
+export function SettingsPage({ settings: initial, libraryPath, version, onSaved, onCheckUpdates }: Props) {
   const t = useT();
   const [settings, setSettings] = useState(initial);
   const [status, setStatus] = useState<{ kind: "saved" | "error"; text: string } | null>(null);
@@ -205,6 +207,16 @@ export function SettingsPage({ settings: initial, libraryPath, onSaved, onCheckU
         <button type="button" className="secondary" onClick={() => set({ app_rules: [...settings.app_rules, { app: "", enabled: true }] })}>
           + {t("rule_add")}
         </button>
+      </section>
+
+      <section className="panel">
+        <h3>{t("about")}</h3>
+        <p>{t("about_text", { version })}</p>
+        <div className="row-buttons">
+          <button type="button" className="secondary" onClick={() => void api.openLink("donate")}>
+            {t("donate")}
+          </button>
+        </div>
       </section>
     </div>
   );

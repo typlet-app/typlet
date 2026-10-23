@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 use tauri::State;
+use typlet_core::links;
 use typlet_core::{
     Conflict, DateLanguage, InsertMethod, Library, RenderContext, Settings, Snippet, SnippetId,
     find_conflicts, nesting, render,
@@ -434,7 +435,8 @@ pub(crate) fn open_folder(state: State<'_, EditorState>, which: String) {
 /// URL, so it cannot open arbitrary addresses.
 fn link(which: &str) -> Option<&'static str> {
     match which {
-        "download" => Some("https://github.com/typlet-app/typlet/releases/latest"),
+        "download" => Some(links::LATEST_RELEASE),
+        "donate" => Some(links::DONATE),
         _ => None,
     }
 }
@@ -468,6 +470,7 @@ mod tests {
             link("download"),
             Some("https://github.com/typlet-app/typlet/releases/latest")
         );
+        assert_eq!(link("donate"), Some("https://ko-fi.com/finnbach"));
         assert_eq!(link("https://example.com"), None);
     }
 

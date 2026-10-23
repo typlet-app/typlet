@@ -20,7 +20,7 @@ export const api = {
   openFolder: (which: "library" | "data") => invoke<void>("open_folder", { which }),
   startBackground: () => invoke<boolean>("start_background"),
   /** Opens one of Typlet's web pages in the browser. */
-  openLink: (which: "download") => invoke<void>("open_link", { which }),
+  openLink: (which: "download" | "donate") => invoke<void>("open_link", { which }),
   updateStatus: () => invoke<UpdateView>("update_status"),
   checkForUpdate: () => invoke<UpdateView>("check_for_update"),
   installUpdate: () => invoke<void>("install_update"),

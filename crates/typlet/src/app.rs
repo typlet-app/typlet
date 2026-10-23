@@ -11,6 +11,7 @@ use std::time::Duration;
 
 use crossbeam_channel::Sender;
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
+use typlet_core::links;
 use typlet_core::snippet::validate_trigger;
 use typlet_core::{
     DateLanguage, Document, FieldKind as CoreFieldKind, Hotkey, Language, Library, RenderContext,
@@ -383,7 +384,8 @@ impl App {
         tray.on_toggle_autostart(with(|app| app.toggle_autostart()));
         tray.on_setup(with(|app| app.show_setup()));
         tray.on_diagnostics(with(|app| app.show_diagnostics()));
-        tray.on_help(with(|app| os::open_url(os::help_url(app.german()))));
+        tray.on_help(with(|app| os::open_url(links::user_guide(app.german()))));
+        tray.on_donate(|| os::open_url(links::DONATE));
         tray.on_quit(|| {
             let _ = slint::quit_event_loop();
         });

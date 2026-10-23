@@ -1,4 +1,6 @@
 {
+  "about": "About Typlet",
+  "about_text": "Typlet {version} is free and open source. If it saves you time, you can support its development.",
   "advanced": "Advanced",
   "app_rules": "App rules",
   "app_rules_help": "Change how Typlet behaves in single programs, identified by their file name (for example program.exe). Built-in rules already cover {apps}. App rules work on Windows; GNOME does not tell Typlet which app is active.",
@@ -39,6 +41,7 @@
   "delete_confirm": "Delete “{label}”? This cannot be undone.",
   "delete_confirm_used": "Delete “{label}”? It is used in {users} and will be missing there. This cannot be undone.",
   "discard_changes": "You have unsaved changes. Discard them?",
+  "donate": "❤️ Support Typlet",
   "duplicate": "Duplicate",
   "editor_placeholder": "Type the text Typlet should insert…",
   "enabled": "Active",
@@ -59,6 +62,7 @@
   "form_fields": "Form",
   "form_fields_help": "Typlet asks these questions before inserting the snippet.",
   "home_count": "You have {count} snippets. Choose one on the left or create a new one.",
+  "home_donate": "Typlet is free. Does it save you time?",
   "home_empty": "You have no snippets yet. Create your first one or import them from espanso.",
   "home_title": "Your snippets",
   "hotkey_clear": "Remove",
