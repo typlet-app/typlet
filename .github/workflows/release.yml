@@ -102,6 +102,56 @@ jobs:
           mkdir dist
           find target/release/bundle \( -name '*-setup.exe' -o -name '*.deb' -o -name '*.AppImage' \) -exec cp {} dist/ \;
           ls -l dist
+          {
+            echo "### Installers (${{ matrix.name }})"
+            echo
+            echo "| File | Size |"
+            echo "|---|---|"
+            for f in dist/*; do echo "| \`$(basename "$f")\` | $(du -h "$f" | cut -f1) |"; done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Install and uninstall once, so a broken package fails here and not
+      # on a tester's PC. Problems are reported as annotations.
+      - name: Smoke test the Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist\*-setup.exe | Select-Object -First 1
+          Start-Process -FilePath $setup.FullName -ArgumentList '/S' -Wait
+          $dir = Join-Path $env:LOCALAPPDATA 'Typlet'
+          foreach ($exe in 'typlet.exe', 'typlet-editor.exe', 'uninstall.exe') {
+            if (-not (Test-Path (Join-Path $dir $exe))) {
+              $found = (Get-ChildItem $dir -Name -ErrorAction SilentlyContinue) -join ', '
+              Write-Output "::error title=Windows installer::$exe missing in $dir (found: $found)"
+              exit 1
+            }
+          }
+          # The uninstaller copies itself to a temporary folder and returns at once.
+          Start-Process -FilePath (Join-Path $dir 'uninstall.exe') -ArgumentList '/S' -Wait
+          for ($i = 0; $i -lt 30 -and (Test-Path (Join-Path $dir 'typlet.exe')); $i++) { Start-Sleep -Seconds 1 }
+          if (Test-Path (Join-Path $dir 'typlet.exe')) {
+            Write-Output "::error title=Windows installer::uninstalling left $dir\typlet.exe behind"
+            exit 1
+          }
+          Write-Output "::notice title=Windows installer::$($setup.Name) installs typlet.exe and typlet-editor.exe to %LOCALAPPDATA%\Typlet and uninstalls cleanly"
+
+      - name: Smoke test the Linux packages
+        if: runner.os == 'Linux'
+        run: |
+          fail() { echo "::error title=Linux packages::$1"; exit 1; }
+          deb=$(ls dist/*.deb)
+          package=$(dpkg-deb -f "$deb" Package)
+          sudo apt-get install -y "./$deb"
+          for f in /usr/bin/typlet /usr/bin/typlet-editor; do [ -x "$f" ] || fail "$f missing after installing $package"; done
+          [ -f /usr/lib/udev/rules.d/60-typlet-uinput.rules ] || fail "udev rule missing"
+          id -nG "$USER" | grep -qw input || groups "$USER" | grep -qw input || fail "the post-install script did not add $USER to the group input"
+          sudo apt-get remove -y "$package"
+          [ ! -e /usr/bin/typlet ] || fail "removing $package left /usr/bin/typlet behind"
+          appimage=$(ls dist/*.AppImage)
+          chmod +x "$appimage"
+          (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/$appimage" --appimage-extract >/dev/null)
+          for f in typlet typlet-editor; do [ -x "$RUNNER_TEMP/squashfs-root/usr/bin/$f" ] || fail "$f missing in the AppImage"; done
+          echo "::notice title=Linux packages::$(basename "$deb") installs and removes cleanly; $(basename "$appimage") contains typlet and typlet-editor"
 
       # Signing via the SignPath Foundation (ADR 0008) is switched on by
       # setting the repository variable SIGNPATH_ORGANIZATION_ID and the

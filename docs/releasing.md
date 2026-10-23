@@ -9,6 +9,8 @@ Releases are built by the [Release workflow](../.github/workflows/release.yml) w
 | `Typlet_<version>_amd64.AppImage` | `ubuntu-22.04` | Portable Linux build |
 | `SHA256SUMS.txt` | | Checksums |
 
+Every build also installs and uninstalls its packages once on the runner (smoke test) and lists the files in the job summary. The same build runs for pull requests that change the packaging, and on demand from **Actions → Release → Run workflow**, without creating a release; testers find the installers under the run's **Artifacts** ([test builds](testing/test-build.md)).
+
 Versions follow [Semantic Versioning](https://semver.org). All `0.x` versions are published as **pre-releases (beta)**.
 
 ## Checklist

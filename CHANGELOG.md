@@ -7,7 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
-- Installers (milestone M5): Windows NSIS installer per user without admin rights, Debian package with udev rule and `input` group set-up, AppImage; built by the new release workflow from version tags as draft releases with checksums; code-signing step prepared for SignPath (ADR 0013, docs/releasing.md).
+- Installers (milestone M5): Windows NSIS installer per user without admin rights, Debian package with udev rule and `input` group set-up, AppImage; built by the new release workflow from version tags as draft releases with checksums, with an install/uninstall smoke test on every build; code-signing step prepared for SignPath (ADR 0013, docs/releasing.md).
 - The editor accepts `--autostart`/`--background` to start only the background program (used by the AppImage at login).
 - User guide: installing; README: download section.
 - Day and month names in dates follow the interface language (`Freitag, 23. Oktober 2026`); formats with a time-zone code such as `%z` no longer fail.
