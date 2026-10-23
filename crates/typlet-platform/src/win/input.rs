@@ -496,3 +496,43 @@ impl InputThread {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Controls;
+
+    /// Runs on the Windows CI runner: the input window is created, raw input
+    /// is registered for it, and a shortcut another program owns is
+    /// reported instead of silently failing.
+    #[test]
+    fn registers_raw_input_and_reports_taken_shortcuts() {
+        // Unusual shortcuts that nothing else on the machine uses.
+        let taken: Hotkey = "Ctrl+Alt+Shift+F13".parse().unwrap();
+        let free: Hotkey = "Ctrl+Alt+Shift+F14".parse().unwrap();
+        let (modifiers, key) = vk::registration(&taken).unwrap();
+        // "Another program": this test thread owns the first shortcut.
+        // SAFETY: a thread hotkey without a window, removed below.
+        unsafe { RegisterHotKey(None, 1, HOT_KEY_MODIFIERS(modifiers), u32::from(key)) }.unwrap();
+
+        let controls = Controls::default();
+        controls.set_hotkeys(&[taken, free]);
+        let (sink, events) = crossbeam_channel::unbounded();
+        start(Shared::new(sink, &controls)).unwrap();
+
+        let window = hwnd(WINDOW.load(Ordering::Acquire));
+        assert!(!window.0.is_null());
+        assert!(raw_input_intact(window));
+        assert_eq!(
+            events.recv_timeout(Duration::from_secs(5)),
+            Ok(Event::HotkeyUnavailable(0))
+        );
+        assert!(
+            events.recv_timeout(Duration::from_millis(300)).is_err(),
+            "the free shortcut registers"
+        );
+
+        // SAFETY: removing the thread hotkey registered above.
+        unsafe { UnregisterHotKey(None, 1) }.unwrap();
+    }
+}
