@@ -58,6 +58,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - CI on Linux and Windows with formatting, clippy, tests, documentation and `cargo-deny` checks.
 - Community files: contributing guide, contributor licence agreement, code of conduct, security and trademark policies, issue and pull request templates.
 
+### Fixed
+
+- The background program reloaded the snippet library over and over after any program read a snippet file (the file watcher treated reading as a change).
+
 ### Changed
 
 - ADR 0003 is partly superseded by ADR 0010: the set-up assistant lives in the background program.
