@@ -28,6 +28,12 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     };
     let start = StartArgs::parse(std::env::args().skip(1));
+    if start.background_only {
+        // Started at login from an AppImage, whose only entry point is the
+        // editor: start the background program and stay invisible.
+        os::ensure_background(&paths);
+        return ExitCode::SUCCESS;
+    }
 
     let result = tauri::Builder::default()
         // A second start focuses the open window and passes its arguments,

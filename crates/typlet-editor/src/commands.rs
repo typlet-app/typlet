@@ -11,8 +11,8 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 use tauri::State;
 use typlet_core::{
-    Conflict, InsertMethod, Library, RenderContext, Settings, Snippet, SnippetId, find_conflicts,
-    render,
+    Conflict, DateLanguage, InsertMethod, Library, RenderContext, Settings, Snippet, SnippetId,
+    find_conflicts, render,
 };
 use typlet_platform::paths::Paths;
 
@@ -29,6 +29,9 @@ pub(crate) struct StartArgs {
     pub(crate) open_snippet: Option<String>,
     /// Open the settings page (`--settings`).
     pub(crate) open_settings: bool,
+    /// Only make sure the background program runs, without a window
+    /// (`--autostart` or `--background`).
+    pub(crate) background_only: bool,
 }
 
 impl StartArgs {
@@ -39,6 +42,7 @@ impl StartArgs {
             match arg.as_str() {
                 "--open" => parsed.open_snippet = args.next(),
                 "--settings" => parsed.open_settings = true,
+                "--autostart" | "--background" => parsed.background_only = true,
                 _ => {}
             }
         }
@@ -211,7 +215,34 @@ pub(crate) struct Preview {
 /// Renders a snippet as it would be inserted now. Fields use their defaults
 /// unless `fields` has a value; the clipboard shows as a marker.
 #[tauri::command]
-pub(crate) fn preview(snippet: Snippet, fields: HashMap<String, String>) -> CommandResult<Preview> {
+pub(crate) fn preview(
+    state: State<'_, EditorState>,
+    snippet: Snippet,
+    fields: HashMap<String, String>,
+) -> CommandResult<Preview> {
+    render_preview(snippet, fields, date_language(&settings(&state.paths)))
+}
+
+/// Day and month names follow the interface language.
+fn date_language(settings: &Settings) -> DateLanguage {
+    let german = match settings.language {
+        typlet_core::Language::De => true,
+        typlet_core::Language::En => false,
+        typlet_core::Language::System => typlet_platform::system_language()
+            .is_some_and(|lang| lang.to_lowercase().starts_with("de")),
+    };
+    if german {
+        DateLanguage::German
+    } else {
+        DateLanguage::English
+    }
+}
+
+fn render_preview(
+    snippet: Snippet,
+    fields: HashMap<String, String>,
+    date_language: DateLanguage,
+) -> CommandResult<Preview> {
     let mut values = fields;
     for field in &snippet.fields {
         values.entry(field.name.clone()).or_insert_with(|| {
@@ -225,6 +256,7 @@ pub(crate) fn preview(snippet: Snippet, fields: HashMap<String, String>) -> Comm
         now: chrono::Local::now().naive_local(),
         clipboard: Some("📋"),
         fields: &values,
+        date_language,
     };
     let rendered = render(&snippet, &context).map_err(|error| error.to_string())?;
     Ok(Preview {
@@ -368,6 +400,8 @@ mod tests {
         ]);
         assert_eq!(args.open_snippet.as_deref(), Some("abc"));
         assert!(args.open_settings);
+        assert!(!args.background_only);
+        assert!(StartArgs::parse(["--autostart".to_owned()]).background_only);
     }
 
     #[test]
@@ -408,7 +442,7 @@ mod tests {
     fn preview_uses_defaults_and_reports_method() {
         let mut s = snippet(":p");
         s.content = Document::from_plain_text("eins\nzwei");
-        let preview = preview(s, HashMap::new()).unwrap();
+        let preview = render_preview(s, HashMap::new(), DateLanguage::English).unwrap();
         assert_eq!(preview.plain, "eins\nzwei");
         assert_eq!(preview.method, "paste");
     }

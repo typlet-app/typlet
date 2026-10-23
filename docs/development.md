@@ -112,10 +112,10 @@ A change is done when its documentation is done:
 
 ## Upgrading the Rust toolchain
 
-1. Change the version in [`rust-toolchain.toml`](../rust-toolchain.toml), in `rust-version` in [`Cargo.toml`](../Cargo.toml) and in the CI workflow.
+1. Change the version in [`rust-toolchain.toml`](../rust-toolchain.toml), in `rust-version` in [`Cargo.toml`](../Cargo.toml) and `RUST_TOOLCHAIN` in every workflow in [`.github/workflows`](../.github/workflows).
 2. Run all checks above and fix new lints.
 3. Commit as `chore: update Rust to 1.xx`.
 
 ## Releasing
 
-Releases are tagged `vMAJOR.MINOR.PATCH` following [Semantic Versioning](https://semver.org). The release workflow (build, sign, publish installers) will be added with milestone M5 and documented here.
+See [releasing.md](releasing.md): version tags build the installers in CI and create a draft release.

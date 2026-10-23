@@ -44,9 +44,12 @@ Typlet V1 targets **Windows** as the polished product and **Linux (Wayland)** at
 - [x] Set-up assistant with test field
 - [x] Diagnostics ("does not work in app X")
 - [x] Pause in password fields (Windows)
-- [ ] Installers without admin rights (Windows), AppImage and packages (Linux)
-- [ ] Code signing via SignPath; Microsoft Store submission
+- [x] Installers without admin rights (Windows), AppImage and Debian package (Linux)
+- [x] Release workflow with draft releases and checksums
+- [ ] Code signing via SignPath *(workflow ready; needs the SignPath account, see [releasing](releasing.md#code-signing))*
+- [ ] Microsoft Store submission *(steps in [releasing](releasing.md#microsoft-store))*
 - [x] Screenshots and user guide in the README
+- [ ] First beta release `0.1.0`, after the [manual tests](testing/manual-test-checklist.md) on Windows and Linux with the installers built by CI ([releasing](releasing.md))
 
 ## After V1
 

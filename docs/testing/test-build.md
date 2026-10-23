@@ -1,8 +1,13 @@
 # 🧪 Trying a test build
 
-Test builds are produced by the [Test builds](../../.github/workflows/build.yml) workflow for every pull request and every change on `main`. They are meant for testing, not for everyday use: they are **unsigned** and have no installer yet.
+There are two kinds of test builds. Both are meant for testing, not for everyday use, and both are **unsigned**.
 
-Download: open the workflow run on GitHub → **Artifacts** → `typlet-windows-x64` or `typlet-linux-x64`.
+| Kind | Built by | Artifacts |
+|---|---|---|
+| **Installers** (recommended) | [Release](../../.github/workflows/release.yml) workflow: on pull requests that change the packaging, and on demand (**Actions → Release → Run workflow**, branch `main`) | `installers-x86_64-pc-windows-msvc` (setup `.exe`), `installers-x86_64-unknown-linux-gnu` (`.deb`, `.AppImage`) |
+| **Plain programs** | [Test builds](../../.github/workflows/build.yml) workflow: every pull request and every change on `main` | `typlet-windows-x64`, `typlet-linux-x64` |
+
+Download: open the workflow run on GitHub → **Artifacts**. The installers are used exactly like the released ones; see [Installing](../user-guide.md#installing) in the user guide. The rest of this page is about the plain programs.
 
 ## Windows 10/11
 

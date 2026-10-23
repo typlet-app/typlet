@@ -18,8 +18,8 @@ use std::time::Duration;
 use chrono::NaiveDateTime;
 use crossbeam_channel::{Receiver, Sender};
 use typlet_core::{
-    Action, EffectiveRule, Hotkey, Input, InsertMethod, InsertedText, Matcher, Outcome,
-    RenderContext, Settings, Snippet, SnippetId, plan_expansion, plan_undo, render,
+    Action, DateLanguage, EffectiveRule, Hotkey, Input, InsertMethod, InsertedText, Matcher,
+    Outcome, RenderContext, Settings, Snippet, SnippetId, plan_expansion, plan_undo, render,
 };
 use typlet_platform::{Backend, Event, InjectOptions, Platform, PlatformError};
 
@@ -524,10 +524,16 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
             None
         };
         let fields = with_defaults(snippet, fields);
+        let date_language = if crate::app::is_german(&self.settings) {
+            DateLanguage::German
+        } else {
+            DateLanguage::English
+        };
         let context = RenderContext {
             now: (self.clock)(),
             clipboard: clipboard.as_deref(),
             fields: &fields,
+            date_language,
         };
         let rendered = match render(snippet, &context) {
             Ok(rendered) => rendered,

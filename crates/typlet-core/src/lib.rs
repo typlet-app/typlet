@@ -37,7 +37,9 @@ pub use hotkey::{Hotkey, HotkeyError, Key};
 pub use library::{Library, LibraryError, LoadReport, LoadedSnippet};
 pub use matcher::{Conflict, Expansion, Input, Matcher, Outcome, find_conflicts};
 pub use plan::{Action, ClipboardContent, InsertedText, plan_expansion, plan_undo};
-pub use render::{InsertMethod, RenderContext, RenderError, Rendered, render, wrap_cf_html};
+pub use render::{
+    DateLanguage, InsertMethod, RenderContext, RenderError, Rendered, render, wrap_cf_html,
+};
 pub use search::SearchIndex;
 pub use settings::{AppRule, EffectiveRule, Language, NewlineMode, Settings, SettingsError};
 pub use snippet::{FieldDef, FieldKind, InsertMode, Snippet, SnippetId, ValidationError};

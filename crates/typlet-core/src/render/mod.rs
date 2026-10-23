@@ -17,8 +17,10 @@ mod plain;
 mod rtf;
 
 use std::collections::HashMap;
+use std::fmt::Write as _;
 
-use chrono::{NaiveDateTime, TimeDelta};
+use chrono::{Locale, NaiveDateTime, TimeDelta};
+use serde::{Deserialize, Serialize};
 
 use crate::document::{Block, Inline, Marks};
 use crate::snippet::{InsertMode, Snippet, is_valid_date_format};
@@ -37,6 +39,19 @@ pub struct RenderContext<'a> {
     pub clipboard: Option<&'a str>,
     /// Form values entered by the user, keyed by field name.
     pub fields: &'a HashMap<String, String>,
+    /// Language of day and month names (`%A`, `%B`, …).
+    pub date_language: DateLanguage,
+}
+
+/// Language of day and month names in dates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DateLanguage {
+    /// Monday, October.
+    #[default]
+    English,
+    /// Montag, Oktober.
+    German,
 }
 
 /// A rendered snippet in all output flavours.
@@ -155,7 +170,7 @@ fn resolve(snippet: &Snippet, ctx: &RenderContext<'_>) -> Result<Vec<ResolvedBlo
                     format,
                     offset_days,
                 } => {
-                    let text = format_date(ctx.now, format, *offset_days)?;
+                    let text = format_date(ctx.now, format, *offset_days, ctx.date_language)?;
                     push_text(&mut runs, &text, &Marks::default());
                 }
                 Inline::Field { name } => {
@@ -223,15 +238,27 @@ pub(crate) fn format_date(
     now: NaiveDateTime,
     format: &str,
     offset_days: i64,
+    language: DateLanguage,
 ) -> Result<String, RenderError> {
     if !is_valid_date_format(format) {
         return Err(RenderError::InvalidDateFormat(format.to_owned()));
     }
     let delta = TimeDelta::try_days(offset_days).ok_or(RenderError::DateOutOfRange)?;
+    // Local time without a zone: shown as UTC so that `%z` cannot fail.
     let date = now
         .checked_add_signed(delta)
-        .ok_or(RenderError::DateOutOfRange)?;
-    Ok(date.format(format).to_string())
+        .ok_or(RenderError::DateOutOfRange)?
+        .and_utc();
+    let locale = match language {
+        DateLanguage::English => Locale::en_US,
+        DateLanguage::German => Locale::de_DE,
+    };
+    // Writing instead of `to_string()`: a pattern the formatter rejects must
+    // not panic in the keyboard engine.
+    let mut out = String::new();
+    write!(out, "{}", date.format_localized(format, locale))
+        .map_err(|_| RenderError::InvalidDateFormat(format.to_owned()))?;
+    Ok(out)
 }
 
 /// Returns `true` for link targets that are safe to render as clickable links.
@@ -256,6 +283,21 @@ mod tests {
             .unwrap()
     }
 
+    #[test]
+    fn dates_use_the_chosen_language_and_never_panic() {
+        let date = |format: &str, language| format_date(ctx_now(), format, 0, language).unwrap();
+        assert_eq!(
+            date("%A, %-d. %B %Y", DateLanguage::German),
+            "Freitag, 23. Oktober 2026"
+        );
+        assert_eq!(
+            date("%A, %B %-d", DateLanguage::English),
+            "Friday, October 23"
+        );
+        // Regression: a time-zone pattern made formatting fail with a panic.
+        assert_eq!(date("%H:%M %z", DateLanguage::English), "09:42 +0000");
+    }
+
     fn paragraph(content: Vec<Inline>) -> Snippet {
         Snippet::new(
             ":t",
@@ -277,6 +319,7 @@ mod tests {
                 now: ctx_now(),
                 clipboard,
                 fields,
+                date_language: DateLanguage::English,
             },
         )
         .unwrap()
@@ -333,6 +376,7 @@ mod tests {
                 now: ctx_now(),
                 clipboard: None,
                 fields: &HashMap::new(),
+                date_language: DateLanguage::English,
             },
         )
         .unwrap_err();
@@ -408,6 +452,7 @@ mod tests {
                 now: ctx_now(),
                 clipboard: None,
                 fields: &HashMap::new(),
+                date_language: DateLanguage::English,
             },
         )
         .unwrap_err();
@@ -426,6 +471,7 @@ mod tests {
                 now: ctx_now(),
                 clipboard: None,
                 fields: &HashMap::new(),
+                date_language: DateLanguage::English,
             },
         )
         .unwrap_err();

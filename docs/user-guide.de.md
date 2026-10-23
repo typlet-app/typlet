@@ -2,11 +2,23 @@
 
 🇬🇧 [English guide](user-guide.md)
 
-> Typlet wird gerade für die Beta vorbereitet. Ausprobieren kannst du [Testversionen](testing/test-build.md); Installationsprogramme folgen mit der Beta.
+> Typlet ist in der Beta-Phase. Bitte [melde alles, was nicht funktioniert](https://github.com/typlet-app/typlet/issues/new/choose).
 
 ## Was Typlet macht
 
 Du tippst ein kurzes **Kürzel** wie `:mfg`, und Typlet ersetzt es durch den ganzen Text – eine Grußformel, deine Adresse, eine formatierte Signatur, das heutige Datum oder ein kleines Formular zum Ausfüllen. Das funktioniert in jedem Programm: Browser, E-Mail, Word, Teams, WhatsApp und so weiter.
+
+## Installieren
+
+Lade das Installationsprogramm für dein System von der [Release-Seite](https://github.com/typlet-app/typlet/releases) herunter.
+
+**Windows 10/11:** Starte `Typlet_…_x64-setup.exe`. Typlet wird nur für deinen Benutzer installiert und braucht keine Administratorrechte. Solange Typlet in der Beta ist, ist es nicht digital signiert; Windows warnt deshalb vor einem unbekannten Herausgeber. Klicke auf **Weitere Informationen → Trotzdem ausführen**.
+
+**Ubuntu, Debian und ähnliche:** Installiere die `.deb`-Datei, zum Beispiel mit `sudo apt install ./Typlet_…_amd64.deb`, und **melde dich einmal ab und wieder an**, damit Typlet die Tastatur lesen darf.
+
+**Andere Linux-Distributionen:** Mache die `.AppImage`-Datei ausführbar und starte sie. Der Einrichtungsassistent zeigt die Befehle für die einmalige Tastatur-Einrichtung.
+
+Zum Entfernen deinstallierst du Typlet wie jedes andere Programm. Deine Textbausteine bleiben in deinem Benutzerordner erhalten (siehe [Wo deine Daten liegen](#wo-deine-daten-liegen)).
 
 ## Erster Start
 

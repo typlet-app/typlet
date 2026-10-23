@@ -53,7 +53,7 @@ mod imp {
         let path = entry_path().ok_or_else(|| PlatformError::Other("no home folder".into()))?;
         if enabled {
             let entry = format!(
-                "[Desktop Entry]\nType=Application\nName=Typlet\nComment=Text expander\nExec={}\nIcon=typlet\nTerminal=false\nX-GNOME-Autostart-enabled=true\n",
+                "[Desktop Entry]\nType=Application\nName=Typlet\nComment=Text expander\nExec={}\nIcon=typlet-editor\nTerminal=false\nX-GNOME-Autostart-enabled=true\n",
                 command(executable)
             );
             typlet_core::fsutil::write_atomic(&path, entry.as_bytes())?;

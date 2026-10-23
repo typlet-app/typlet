@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "deb", "appimage"],
+    "publisher": "Typlet contributors",
+    "copyright": "© 2026 Typlet contributors. Licensed under the GNU GPL v3 or later.",
+    "category": "Productivity",
+    "shortDescription": "Text expander for everyone",
+    "longDescription": "Type a short trigger such as :sig and Typlet replaces it with your full text, in any app. Formatted text, today's date, fill-in forms, a quick search and a visual editor.",
+    "license": "GPL-3.0-or-later",
+    "licenseFile": "../../LICENSE",
+    "homepage": "https://github.com/typlet-app/typlet",
+    "externalBin": ["binaries/typlet"],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["German", "English"],
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "installerHooks": "../../packaging/windows/hooks.nsh"
+      }
+    },
+    "linux": {
+      "deb": {
+        "section": "utils",
+        "files": {
+          "/usr/lib/udev/rules.d/60-typlet-uinput.rules": "../../packaging/linux/60-typlet-uinput.rules"
+        },
+        "postInstallScript": "../../packaging/linux/postinst.sh"
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
+  }
+}

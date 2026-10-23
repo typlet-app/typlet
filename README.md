@@ -11,11 +11,12 @@ A friendly, open-source text expander for everyone — not just power users.
 [![CI](https://github.com/typlet-app/typlet/actions/workflows/ci.yml/badge.svg)](https://github.com/typlet-app/typlet/actions/workflows/ci.yml)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux-informational)
-![Status](https://img.shields.io/badge/status-alpha-orange)
+![Status](https://img.shields.io/badge/status-beta-yellow)
 [![Test builds](https://github.com/typlet-app/typlet/actions/workflows/build.yml/badge.svg)](https://github.com/typlet-app/typlet/actions/workflows/build.yml)
 [![Rust](https://img.shields.io/badge/rust-1.97-dea584?logo=rust)](rust-toolchain.toml)
 
 [What is Typlet?](#-what-is-typlet) ·
+[Download](#-download) ·
 [Features](#-features) ·
 [Screenshots](#-screenshots) ·
 [User guide](docs/user-guide.md) ·
@@ -26,8 +27,8 @@ A friendly, open-source text expander for everyone — not just power users.
 </div>
 
 > [!WARNING]
-> Typlet is in early development. The background program and the editor work; installers and signed builds are next.
-> Brave testers can try [unsigned test builds](docs/testing/test-build.md). ⭐ Star or 👀 watch the repository to follow along.
+> Typlet is a **beta**. It works, but expect rough edges, and the installers are not code-signed yet.
+> ⭐ Star or 👀 watch the repository to follow along, and [report what you find](https://github.com/typlet-app/typlet/issues/new/choose).
 
 ---
 
@@ -36,6 +37,18 @@ A friendly, open-source text expander for everyone — not just power users.
 You type a short abbreviation like `:sig`, and Typlet instantly replaces it with your full signature, today's date, a formatted e-mail footer or a fill-in form — **in any app**: your browser, Outlook, Word, Teams, WhatsApp, your CRM.
 
 Tools like this already exist. The good free ones are powerful but expect you to edit configuration files; the easy ones are subscriptions. Typlet aims to be both: **free, open source and simple enough for anyone**.
+
+## 📥 Download
+
+Get the latest version from the **[releases page](https://github.com/typlet-app/typlet/releases)**:
+
+| System | File |
+|---|---|
+| 🪟 Windows 10/11 | `Typlet_…_x64-setup.exe` — installs for your user, no admin rights |
+| 🐧 Ubuntu, Debian | `Typlet_…_amd64.deb` |
+| 🐧 Other Linux | `Typlet_…_amd64.AppImage` |
+
+The [user guide](docs/user-guide.md#installing) ([Deutsch](docs/user-guide.de.md#installieren)) explains installing and the first steps. Builds of the latest development state are attached to every [CI run](docs/testing/test-build.md).
 
 ## 🤔 Why another text expander?
 
@@ -73,7 +86,8 @@ Tools like this already exist. The good free ones are powerful but expect you to
 | ✍️ Visual snippet editor: formatting, placeholder chips, forms, live preview | ✅ |
 | ⚙️ Settings and app rules in the editor | ✅ |
 | 📥 Import from espanso | ✅ |
-| 📦 Installers, signed builds | 🗺️ |
+| 📦 Installers: Windows (per user), Debian package, AppImage | ✅ |
+| 🔏 Code signing and Microsoft Store | 🗺️ |
 
 See the [roadmap](docs/roadmap.md) for milestones and what comes after V1 (macOS, sync, team libraries).
 
@@ -122,7 +136,7 @@ typlet/
 │   ├── architecture.md · design.md · development.md
 │   ├── roadmap.md · snippet-format.md
 │   └── user-guide.md · user-guide.de.md
-├── packaging/            # Files for installers (udev rule for Linux)
+├── packaging/            # Installer configuration, Windows hooks, udev rule
 ├── scripts/              # Translation check, icon rendering
 ├── assets/               # Logo and artwork
 └── .github/              # CI, test builds, issue and pull request templates

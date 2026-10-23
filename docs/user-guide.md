@@ -2,11 +2,23 @@
 
 🇩🇪 [Deutsche Anleitung](user-guide.de.md)
 
-> Typlet is in beta preparation. Today you can try [test builds](testing/test-build.md); installers follow with the beta.
+> Typlet is in beta. Please [report anything that does not work](https://github.com/typlet-app/typlet/issues/new/choose).
 
 ## What Typlet does
 
 You type a short **trigger** such as `:mfg`, and Typlet replaces it with the full text — a greeting, your address, a formatted signature, today's date or a small form you fill in. It works in every app: browser, e-mail, Word, Teams, WhatsApp and so on.
+
+## Installing
+
+Download the installer for your system from the [releases page](https://github.com/typlet-app/typlet/releases).
+
+**Windows 10/11:** run `Typlet_…_x64-setup.exe`. It installs Typlet for your user only and needs no admin rights. While Typlet is in beta it is not code-signed, so Windows warns about an unknown publisher: click **More info → Run anyway**.
+
+**Ubuntu, Debian and similar:** install the `.deb` file, for example with `sudo apt install ./Typlet_…_amd64.deb`, then **log out and back in once** so Typlet may read the keyboard.
+
+**Other Linux distributions:** make the `.AppImage` file executable and start it. The set-up assistant shows the commands for the one-time keyboard set-up.
+
+To remove Typlet, uninstall it like any other program. Your snippets stay in your user folder (see [Where your data lives](#where-your-data-lives)).
 
 ## First start
 
