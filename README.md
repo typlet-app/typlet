@@ -137,7 +137,7 @@ typlet/
 │   ├── roadmap.md · snippet-format.md
 │   └── user-guide.md · user-guide.de.md
 ├── packaging/            # Installer configuration, Windows hooks, udev rule
-├── scripts/              # Translation check, icon rendering
+├── scripts/              # Translation check, icon rendering, CI helpers
 ├── assets/               # Logo and artwork
 └── .github/              # CI, test builds, issue and pull request templates
 ```

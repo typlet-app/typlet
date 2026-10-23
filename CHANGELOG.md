@@ -71,6 +71,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Changed
 
 - Windows: Typlet reads the keyboard with Raw Input instead of a low-level keyboard hook and registers its shortcuts with Windows (`RegisterHotKey`). Raw input only reads, so the Backspace that undoes an expansion now reaches the app first, as on Linux (ADR 0014).
+- CI: installing Linux packages on the runners is time-limited and retried (`scripts/install-linux-deps.sh`); a hanging package mirror had blocked jobs for hours.
 - ADR 0003 is partly superseded by ADR 0010: the set-up assistant lives in the background program.
 - `cargo-deny` treats "unmaintained" notices as errors only for direct dependencies.
 

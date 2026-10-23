@@ -40,7 +40,7 @@ All five must pass before a change is finished. CI runs them on Linux and Window
 - `crates/typlet-editor`: editor (Tauri; React + Tiptap interface in `web/`, texts in `web/src/i18n/`)
 - `crates/typlet-import`: espanso import
 - `packaging/`: installer configuration (`tauri.release.json`), Windows NSIS hooks, Linux udev rule and post-install script
-- `scripts/`: translation check, icon rendering, screenshots, image optimisation
+- `scripts/`: translation check, icon rendering, screenshots, image optimisation, CI package install
 - `docs/`: architecture, design, format specs, roadmap, user guides (EN/DE), development, releasing, testing, ADRs, tested examples, screenshots
 
 Also keep in step: every new interface text needs a German translation (`python3 scripts/check-translations.py`); the editor interface has its own checks (`cd crates/typlet-editor/web && npm run typecheck && npm test`).

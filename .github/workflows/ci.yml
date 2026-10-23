@@ -52,7 +52,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_BUILD_DEPS
+        timeout-minutes: 30
+        run: scripts/install-linux-deps.sh $LINUX_BUILD_DEPS
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Tests
@@ -70,7 +71,8 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
       - uses: Swatinem/rust-cache@v2
       - name: Install Linux build dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends $LINUX_BUILD_DEPS
+        timeout-minutes: 30
+        run: scripts/install-linux-deps.sh $LINUX_BUILD_DEPS
       - run: cargo doc --workspace --no-deps --locked
 
   editor-web:
