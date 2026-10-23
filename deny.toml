@@ -17,6 +17,10 @@ targets = [
 # Known security advisories fail the build. Add entries here only with a
 # comment explaining why the advisory does not affect Typlet.
 ignore = []
+# "Unmaintained" notices fail the build only for crates Typlet uses directly.
+# Transitive ones (for example font parsing and D-Bus crates inside Slint) can
+# only be replaced upstream and are reviewed when dependencies are updated.
+unmaintained = "workspace"
 
 [licenses]
 # Every dependency must be under a licence compatible with GPL-3.0-or-later.
