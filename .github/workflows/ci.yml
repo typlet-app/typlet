@@ -22,7 +22,8 @@ env:
 
 jobs:
   fmt:
-    name: Format and translations
+    # The job name is a required status check in the branch rules; keep it.
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
