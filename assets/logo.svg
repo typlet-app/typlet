@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="title">
+  <title id="title">Typlet</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5B5BF0"/>
+      <stop offset="1" stop-color="#A24DF2"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="url(#bg)"/>
+  <rect x="20" y="24" width="88" height="80" rx="18" fill="#FFFFFF" fill-opacity="0.14"/>
+  <rect x="34" y="40" width="44" height="12" rx="6" fill="#FFFFFF"/>
+  <rect x="50" y="40" width="12" height="50" rx="6" fill="#FFFFFF"/>
+  <rect x="84" y="62" width="8" height="28" rx="4" fill="#FFFFFF" fill-opacity="0.8"/>
+</svg>
