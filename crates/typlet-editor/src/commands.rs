@@ -29,6 +29,9 @@ pub(crate) struct StartArgs {
     pub(crate) open_snippet: Option<String>,
     /// Open the settings page (`--settings`).
     pub(crate) open_settings: bool,
+    /// Only make sure the background program runs, without a window
+    /// (`--autostart` or `--background`).
+    pub(crate) background_only: bool,
 }
 
 impl StartArgs {
@@ -39,6 +42,7 @@ impl StartArgs {
             match arg.as_str() {
                 "--open" => parsed.open_snippet = args.next(),
                 "--settings" => parsed.open_settings = true,
+                "--autostart" | "--background" => parsed.background_only = true,
                 _ => {}
             }
         }
@@ -368,6 +372,8 @@ mod tests {
         ]);
         assert_eq!(args.open_snippet.as_deref(), Some("abc"));
         assert!(args.open_settings);
+        assert!(!args.background_only);
+        assert!(StartArgs::parse(["--autostart".to_owned()]).background_only);
     }
 
     #[test]

@@ -11,6 +11,7 @@
 | [Development](development.md) | Setting up, building, testing and project conventions |
 | [Test builds](testing/test-build.md) | Trying unsigned builds from CI on Windows and Linux |
 | [Manual test checklist](testing/manual-test-checklist.md) | What to test by hand before a release |
+| [Releasing](releasing.md) | Versions, tags, installers, signing and the Microsoft Store |
 | [Decision records](adr/README.md) | Why things are the way they are |
 
 ## Keeping the docs current

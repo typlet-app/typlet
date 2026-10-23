@@ -34,10 +34,17 @@ All five must pass before a change is finished. CI runs them on Linux and Window
 
 ## Layout
 
-- `crates/typlet-core`: format, validation, matching, rendering, storage
-- `docs/`: architecture, format spec, roadmap, development guide, ADRs, tested examples
-- Planned crates: `typlet-platform` (OS backends), `typlet` (background program, Slint), `typlet-editor` (Tauri + Tiptap)
+- `crates/typlet-core`: format, validation, matching, rendering, plans, search, settings, storage
+- `crates/typlet-platform`: OS backends (Windows hooks/SendInput/clipboard/UIA, Linux evdev/xkbcommon/uinput), paths, autostart
+- `crates/typlet`: background program (engine thread, Slint UI in `ui/`, German texts in `lang/`)
+- `crates/typlet-editor`: editor (Tauri; React + Tiptap interface in `web/`, texts in `web/src/i18n/`)
+- `crates/typlet-import`: espanso import
+- `packaging/`: installer configuration (`tauri.release.json`), Windows NSIS hooks, Linux udev rule and post-install script
+- `scripts/`: translation check, icon rendering, screenshots, image optimisation
+- `docs/`: architecture, design, format specs, roadmap, user guides (EN/DE), development, releasing, testing, ADRs, tested examples, screenshots
+
+Also keep in step: every new interface text needs a German translation (`python3 scripts/check-translations.py`); the editor interface has its own checks (`cd crates/typlet-editor/web && npm run typecheck && npm test`).
 
 ## Toolchain
 
-The Rust version is pinned in `rust-toolchain.toml`. When upgrading, also change `rust-version` in `Cargo.toml` and the toolchain in `.github/workflows/ci.yml`.
+The Rust version is pinned in `rust-toolchain.toml`. When upgrading, also change `rust-version` in `Cargo.toml` and `RUST_TOOLCHAIN` in every workflow in `.github/workflows/`.

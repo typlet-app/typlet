@@ -4,6 +4,14 @@ The keyboard engine talks to real keyboards and real applications, so part of ev
 
 Record: Typlet version, Windows or Linux version, keyboard layout (for example German QWERTZ).
 
+## 0. Installing (release candidates)
+
+- [ ] Windows: the installer runs without admin rights and installs to `%LOCALAPPDATA%\Typlet`; the start menu entry "Typlet" opens the editor and starts the background program.
+- [ ] Windows: installing a newer version while Typlet runs replaces it; Typlet starts again afterwards.
+- [ ] Windows: uninstalling stops Typlet, removes the start-at-login entry and keeps `%APPDATA%\Typlet`.
+- [ ] Debian/Ubuntu: `sudo apt install ./Typlet_…deb` installs the udev rule and adds you to `input`; after logging in again the set-up assistant shows green checks.
+- [ ] AppImage: starts on a second distribution (for example Fedora); "Start with the computer" starts only the background program at login.
+
 ## 1. First start
 
 - [ ] The set-up assistant opens and lists five example snippets in your language.

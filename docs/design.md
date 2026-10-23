@@ -1,6 +1,6 @@
 # 🎨 Design
 
-How Typlet looks and speaks. The background program implements these tokens in [`theme.slint`](../crates/typlet/ui/theme.slint); the editor (M4) will use the same values.
+How Typlet looks and speaks. The background program implements these tokens in [`theme.slint`](../crates/typlet/ui/theme.slint), the editor as CSS variables in [`styles.css`](../crates/typlet-editor/web/src/styles.css); both use the same values.
 
 ## Principles
 

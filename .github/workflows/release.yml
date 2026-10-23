@@ -1,0 +1,162 @@
+name: Release
+
+# Builds the installers and creates a *draft* GitHub release when a version
+# tag (v1.2.3) is pushed. Review the draft, then publish it. 0.x versions
+# are published as pre-releases (beta).
+# The full procedure is in docs/releasing.md.
+
+on:
+  push:
+    tags: ["v*"]
+  # Changes to the packaging build the installers (without a release), so
+  # problems show up before the next tag.
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "packaging/**"
+      - "crates/typlet-editor/tauri.conf.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  # Keep in sync with rust-toolchain.toml.
+  RUST_TOOLCHAIN: "1.97.0"
+
+jobs:
+  build:
+    name: Installers (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            exe: .exe
+            bundles: nsis
+          # The oldest supported Ubuntu, so the packages run on newer systems too.
+          - name: Linux
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            exe: ""
+            bundles: deb,appimage
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version matches the tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Cargo.toml has version $version but the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: crates/typlet-editor/web/package-lock.json
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libxkbcommon-dev libfontconfig1-dev libwayland-dev libwebkit2gtk-4.1-dev libdbus-1-dev file
+
+      - name: Install the editor interface's packages
+        working-directory: crates/typlet-editor/web
+        run: npm ci
+
+      # The background program ships inside the editor's installer as a
+      # "sidecar" binary named after the target (see packaging/tauri.release.json).
+      - name: Build the background program
+        run: |
+          cargo build --release --locked -p typlet
+          mkdir -p crates/typlet-editor/binaries
+          cp "target/release/typlet${{ matrix.exe }}" "crates/typlet-editor/binaries/typlet-${{ matrix.target }}${{ matrix.exe }}"
+
+      - name: Build the installers
+        working-directory: crates/typlet-editor
+        env:
+          # linuxdeploy is an AppImage itself; CI runners have no FUSE.
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: node web/node_modules/@tauri-apps/cli/tauri.js build --ci --config ../../packaging/tauri.release.json --bundles ${{ matrix.bundles }}
+
+      - name: Collect installers
+        run: |
+          mkdir dist
+          find target/release/bundle \( -name '*-setup.exe' -o -name '*.deb' -o -name '*.AppImage' \) -exec cp {} dist/ \;
+          ls -l dist
+
+      # Signing via the SignPath Foundation (ADR 0008) is switched on by
+      # setting the repository variable SIGNPATH_ORGANIZATION_ID and the
+      # secret SIGNPATH_API_TOKEN. Until then the installers are unsigned.
+      - name: Upload the unsigned Windows installer for signing
+        id: unsigned
+        if: runner.os == 'Windows' && vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-windows
+          path: dist/*-setup.exe
+      - name: Sign with SignPath
+        if: runner.os == 'Windows' && vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: typlet
+          signing-policy-slug: release-signing
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: dist
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: installers-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Draft release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: installers-*
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 0.x versions and versions like 1.0.0-rc.1 are betas.
+          prerelease="" suffix=""
+          case "$GITHUB_REF_NAME" in v0.*|*-*) prerelease="--prerelease" suffix=" (Beta)" ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft $prerelease \
+            --title "Typlet ${GITHUB_REF_NAME#v}$suffix" \
+            --notes-file docs/release-notes.md

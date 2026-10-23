@@ -7,6 +7,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Installers (milestone M5): Windows NSIS installer per user without admin rights, Debian package with udev rule and `input` group set-up, AppImage; built by the new release workflow from version tags as draft releases with checksums; code-signing step prepared for SignPath (ADR 0013, docs/releasing.md).
+- The editor accepts `--autostart`/`--background` to start only the background program (used by the AppImage at login).
+- User guide: installing; README: download section.
 - Editor `typlet-editor` (milestone M4), built with Tauri, React and Tiptap:
   - snippet list with search and categories,
   - rich-text editing with bold, italic, underline, links and lists,
