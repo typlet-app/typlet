@@ -73,14 +73,28 @@ For every cell check:
 - [ ] Starting Typlet a second time opens the editor or a notice, never a second copy.
 - [ ] Quit ends Typlet; the hook is gone (typing triggers does nothing).
 
-## 7. Safety and privacy
+## 7. Editor
+
+- [ ] "Open editor" in the tray opens the editor; starting it again focuses the open window.
+- [ ] Starting the editor while the background program is not running starts it.
+- [ ] Create a snippet with bold text, a link, a list, a date chip, the cursor and a form field; save; it expands correctly in Word/Outlook and in Notepad.
+- [ ] Changing the date format and the day shift updates the chip and the preview.
+- [ ] Duplicate and conflicting triggers (`:c` and `:cc`) show warnings; a trigger with spaces cannot be saved.
+- [ ] Typing a trigger inside the editor does not expand it.
+- [ ] Moving a snippet to another category moves its file; deleting asks first.
+- [ ] Unsaved changes: switching to another snippet asks before discarding.
+- [ ] Settings: changing the language, a shortcut or an app rule takes effect in the background program without a restart.
+- [ ] "Edit in the editor" after creating a snippet from a selection opens exactly that snippet.
+- [ ] Import from espanso: dates, clipboard, forms and formatted text arrive; scripts and regex triggers are listed as not imported; espanso's files are unchanged.
+
+## 8. Safety and privacy
 
 - [ ] In a password field (Windows login form in a browser, KeePass), triggers do not expand; Diagnostics says "skipped: password field".
 - [ ] `typlet.log` contains no typed text and no snippet text.
 - [ ] Win+V clipboard history does not contain the pasted snippet (Windows).
 - [ ] Apps running as administrator: expansion fails with a clear notice (expected for unsigned builds).
 
-## 8. Diagnostics
+## 9. Diagnostics
 
 - [ ] Shows keyboard, typing and app detection status.
 - [ ] Recent expansions list the app and how the text was inserted.

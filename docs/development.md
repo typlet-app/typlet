@@ -6,11 +6,12 @@
 |---|---|---|
 | Rust via rustup | Compiler; the version is pinned in [`rust-toolchain.toml`](../rust-toolchain.toml) and installed automatically | <https://rustup.rs> |
 | Git | Version control | Your package manager |
-| Linux libraries | Keyboard layouts, fonts and Wayland for the background program | `sudo apt install libxkbcommon-dev libfontconfig1-dev libwayland-dev` |
-| Python 3 *(optional)* | Translation check and icon rendering scripts | Your package manager |
+| Node.js 22+ | The editor's web interface | <https://nodejs.org> or your package manager |
+| Linux libraries | Keyboard layouts, fonts, Wayland (background program); WebKitGTK and D-Bus (editor) | `sudo apt install libxkbcommon-dev libfontconfig1-dev libwayland-dev libwebkit2gtk-4.1-dev libdbus-1-dev` |
+| Python 3 *(optional)* | Translation check, icon rendering and screenshot scripts | Your package manager |
 | cargo-deny *(optional)* | Licence and advisory checks, also run in CI | `cargo install cargo-deny --locked` |
 
-On Windows, the Visual Studio Build Tools (C++ workload) are needed, as for any Rust project. The editor (milestone M4) will add Node.js and WebKitGTK; they will be listed here then.
+On Windows, the Visual Studio Build Tools (C++ workload) are needed, as for any Rust project; the editor uses WebView2, which ships with Windows 10 and 11.
 
 Typlet is developed on **Ubuntu 26.04 LTS (GNOME, Wayland)** and **Windows 11**. Both are covered by CI.
 
@@ -23,6 +24,7 @@ cargo fmt --all                                             # format
 cargo doc --workspace --no-deps --open                      # API documentation
 cargo deny check                                            # licences, advisories, sources
 python3 scripts/check-translations.py                       # every text translated
+(cd crates/typlet-editor/web && npm ci && npm run typecheck && npm test)   # editor interface
 ```
 
 CI runs exactly these checks on Linux and Windows for every push and pull request, and builds unsigned test versions ([how to try them](testing/test-build.md)).
@@ -46,18 +48,28 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 Development builds never register themselves for autostart. To start from scratch, quit Typlet and delete `~/.config/typlet` and `~/.local/share/typlet` (Windows: `%APPDATA%\Typlet`).
 
+## Running the editor
+
+```sh
+cd crates/typlet-editor/web && npm ci && cd ..
+web/node_modules/.bin/tauri dev           # editor with hot reload (starts the Vite dev server)
+```
+
+`cargo run -p typlet-editor` alone builds a development editor that expects the dev server on port 5173. Without Tauri, `VITE_DEMO=1 npm run dev` in `web/` shows the interface with sample data in any browser. See [crates/typlet-editor](../crates/typlet-editor/README.md) for details.
+
 ## Working on the user interface
 
 - Windows are written in [Slint](https://slint.dev) in [`crates/typlet/ui`](../crates/typlet/ui). Colours, spacing and type sizes come from [`theme.slint`](../crates/typlet/ui/theme.slint); see [design.md](design.md).
 - Write every visible text in English with `@tr("…")`, then add the German translation to [`typlet.po`](../crates/typlet/lang/de/LC_MESSAGES/typlet.po). `python3 scripts/check-translations.py --list` prints the missing entries ready to paste.
+- The editor's texts live in [`en.json`](../crates/typlet-editor/web/src/i18n/en.json) and [`de.json`](../crates/typlet-editor/web/src/i18n/de.json); both must have the same keys (checked by the same script). The editor's colours are CSS variables with the same values as `theme.slint`.
 - Regenerate the screenshots after visible changes and commit them:
 
   ```sh
   cargo run -p typlet --example screenshots -- docs/images
   ```
 
-  The example renders every window with sample data in English and German using the software renderer, so it needs no display.
-- Icons are rendered from [`assets/logo.svg`](../assets/logo.svg) with `python3 scripts/render-icons.py` (needs `pip install cairosvg`). The PNGs are committed.
+  The example renders every window with sample data in English and German using the software renderer, so it needs no display. Editor screenshots come from `python3 scripts/editor-screenshots.py` (needs `pip install playwright pillow` and Playwright's Chromium). Finally shrink the images with `python3 scripts/optimise-images.py`.
+- Icons are rendered from [`assets/logo.svg`](../assets/logo.svg) with `python3 scripts/render-icons.py` (needs `pip install cairosvg`). The PNGs are committed. The editor's icons are generated with `web/node_modules/.bin/tauri icon <1024px PNG of the logo> -o icons` in `crates/typlet-editor` (delete the `android` and `ios` folders it creates), and `web/public/logo.svg` is a copy of the logo.
 
 ## Checking Windows code on Linux
 
@@ -65,7 +77,7 @@ The Windows backend can be type-checked without a Windows machine. Install the s
 
 ```sh
 RUSTC_BOOTSTRAP=1 cargo clippy -Zbuild-std=std,panic_abort \
-  --target x86_64-pc-windows-msvc -p typlet-platform -p typlet --all-targets -- -D warnings
+  --target x86_64-pc-windows-msvc -p typlet-platform -p typlet -p typlet-editor --all-targets -- -D warnings
 ```
 
 This catches compile errors and lints; running and linking still need Windows (CI does both).

@@ -7,6 +7,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Editor `typlet-editor` (milestone M4), built with Tauri, React and Tiptap:
+  - snippet list with search and categories,
+  - rich-text editing with bold, italic, underline, links and lists,
+  - placeholders as chips: date (format and day shift), cursor, clipboard, form fields,
+  - form designer with text, multi-line, choice and yes/no questions,
+  - live preview rendered by the same code that inserts snippets,
+  - live warnings for duplicate and unreachable triggers,
+  - insert mode and per-snippet keyboard shortcut,
+  - settings: language, autostart, messages, shortcuts, snippet folder, app rules,
+  - import from espanso (`typlet-import` crate),
+  - English and German interface,
+  - starts the background program if needed; a second start opens the requested snippet.
+- Triggers typed into the editor are not expanded (editor focus lock, ADR 0012).
+- Category names are validated so snippets cannot be saved outside the library.
 - Background program `typlet` (milestones M2 and M3):
   - expands triggers in every app, types short text and pastes long or formatted text,
   - restores the clipboard afterwards and keeps temporary content out of the Windows clipboard history,
@@ -28,6 +42,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Snippet format: optional `hotkey` field.
 - Documentation: user guide in English and German, design tokens and glossary, test-build instructions, manual test checklist, screenshots, decision records 0009–0011.
 - CI: German translation check, Linux build libraries, unsigned test builds for Windows and Linux.
+- CI: editor interface job (type check, tests, build); test builds contain the editor.
+- Documentation: editor chapters in the user guide, editor screenshots, ADR 0012, screenshot and image scripts.
 - `typlet-core` crate:
   - snippet file format (version 1) with validation,
   - rich-text documents with bold, italic, underline, links, bullet and numbered lists,

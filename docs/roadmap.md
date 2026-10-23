@@ -29,22 +29,24 @@ Typlet V1 targets **Windows** as the polished product and **Linux (Wayland)** at
 - [x] Global and per-snippet hotkeys
 - [x] "Create snippet from selection"
 
-## M4 — Editor ⏳
+## M4 — Editor ✅
 
-- [ ] Editor app (Tauri + Tiptap): list, search, categories
-- [ ] Rich-text editing with placeholders as visual chips
-- [ ] Conflict warnings, live preview
-- [ ] Settings and app rules
-- [ ] Import from espanso
+- [x] Editor app (Tauri + React + Tiptap): list, search, categories
+- [x] Rich-text editing with placeholders as visual chips
+- [x] Form fields, per-snippet hotkeys and insert mode
+- [x] Conflict warnings, live preview rendered by the core
+- [x] Settings and app rules
+- [x] Import from espanso
+- [x] No expansion while typing in the editor
 
-## M5 — Beta
+## M5 — Beta ⏳
 
 - [x] Set-up assistant with test field
 - [x] Diagnostics ("does not work in app X")
 - [x] Pause in password fields (Windows)
 - [ ] Installers without admin rights (Windows), AppImage and packages (Linux)
 - [ ] Code signing via SignPath; Microsoft Store submission
-- [ ] Screenshots and user guide in the README *(background program done; editor follows with M4)*
+- [x] Screenshots and user guide in the README
 
 ## After V1
 
