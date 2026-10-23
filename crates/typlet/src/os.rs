@@ -4,9 +4,14 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// The online user guide.
-pub(crate) const HELP_URL: &str =
-    "https://github.com/typlet-app/typlet/blob/main/docs/user-guide.md";
+/// The online user guide in the interface language.
+pub(crate) fn help_url(german: bool) -> &'static str {
+    if german {
+        "https://github.com/typlet-app/typlet/blob/main/docs/user-guide.de.md"
+    } else {
+        "https://github.com/typlet-app/typlet/blob/main/docs/user-guide.md"
+    }
+}
 
 #[cfg(windows)]
 const EDITOR_FILE: &str = "typlet-editor.exe";

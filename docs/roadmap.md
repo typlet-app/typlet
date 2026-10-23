@@ -11,23 +11,25 @@ Typlet V1 targets **Windows** as the polished product and **Linux (Wayland)** at
 - [x] `typlet-core`: snippet format, validation, rendering (plain, HTML, RTF, `CF_HTML`), trigger matching, storage
 - [x] Documentation: architecture, format specification, decision records
 
-## M2 — Keyboard engine ⏳
+## M2 — Keyboard engine ✅
 
-- [ ] Platform layer interface (`typlet-platform`)
-- [ ] Linux backend: evdev input, xkbcommon translation, uinput typing, clipboard
-- [ ] Windows backend: keyboard hook, dead-key-safe translation, Unicode typing, clipboard with `CF_HTML`/RTF
-- [ ] Clipboard save and restore with all formats, transient marking
-- [ ] Background program with tray icon, pause/resume and autostart
-- [ ] Manual test matrix across the most-used apps
+- [x] Platform layer interface (`typlet-platform`)
+- [x] Linux backend: evdev input, xkbcommon translation, uinput typing, clipboard
+- [x] Windows backend: keyboard hook, dead-key-safe translation, Unicode typing, clipboard with `CF_HTML`/RTF
+- [x] Clipboard save and restore with all formats, transient marking
+- [x] Background program with tray icon, pause/resume and autostart
+- [x] App rules with built-in defaults for Excel, chat apps, browsers and remote desktops
+- [x] Unsigned test builds for Windows and Linux from CI
+- [ ] Manual test matrix across the most-used apps (needs real hardware, see the [checklist](testing/manual-test-checklist.md))
 
-## M3 — Quick search, forms, hotkeys
+## M3 — Quick search, forms, hotkeys ✅
 
-- [ ] Quick search window (Slint) that opens instantly and returns focus correctly
-- [ ] Fill-in forms for snippets with fields
-- [ ] Global and per-snippet hotkeys
-- [ ] "Create snippet from selection"
+- [x] Quick search window that opens instantly and returns focus to the previous app
+- [x] Fill-in forms for snippets with fields
+- [x] Global and per-snippet hotkeys
+- [x] "Create snippet from selection"
 
-## M4 — Editor
+## M4 — Editor ⏳
 
 - [ ] Editor app (Tauri + Tiptap): list, search, categories
 - [ ] Rich-text editing with placeholders as visual chips
@@ -37,17 +39,18 @@ Typlet V1 targets **Windows** as the polished product and **Linux (Wayland)** at
 
 ## M5 — Beta
 
-- [ ] Setup assistant with test field
-- [ ] Diagnostics ("does not work in app X")
-- [ ] Pause in password fields
+- [x] Set-up assistant with test field
+- [x] Diagnostics ("does not work in app X")
+- [x] Pause in password fields (Windows)
 - [ ] Installers without admin rights (Windows), AppImage and packages (Linux)
 - [ ] Code signing via SignPath; Microsoft Store submission
-- [ ] Screenshots and user guide in the README
+- [ ] Screenshots and user guide in the README *(background program done; editor follows with M4)*
 
 ## After V1
 
 - macOS
 - Images in snippets
 - Sync and shared team libraries
-- App profiles on GNOME via a Shell extension
+- App profiles and password-field detection on GNOME via a Shell extension
+- Focus handling on GNOME without the "is ready" notification (XDG activation tokens)
 - More languages for the user interface (German and English come first)

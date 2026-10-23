@@ -2,11 +2,11 @@
 
 This document describes how Typlet is built and why. Decisions behind it are recorded in the [ADRs](adr/README.md).
 
-> Status: the platform-independent core (`typlet-core`) exists. Everything else in this document is the agreed design for the components still to be built.
+> Status: the core, both platform backends and the background program exist. The editor (`typlet-editor`) is the agreed design for milestone M4.
 
 ## Goals
 
-1. **Simple for everyone.** No configuration files, no terminal. A visual editor and a setup assistant.
+1. **Simple for everyone.** No configuration files, no terminal. A visual editor and a set-up assistant.
 2. **Reliable in every app.** Multi-line and formatted text must arrive intact, the clipboard must survive.
 3. **Small and trustworthy.** A text expander sees every keystroke. The part that does should be tiny, native, offline and auditable.
 4. **Runs everywhere.** Windows first, Linux from V1, macOS after V1.
@@ -17,42 +17,49 @@ This document describes how Typlet is built and why. Decisions behind it are rec
 flowchart TB
     subgraph BG["typlet (background program, always running)"]
         direction TB
-        H["Input thread<br/>keyboard hook / evdev"] -->|events| E["Engine thread<br/>matcher → renderer → injector"]
-        UI["UI thread (Slint)<br/>tray · quick search · forms"] <--> E
+        H["Input threads<br/>keyboard hook / evdev"] -->|events| E["Engine thread<br/>matcher → renderer → plan → platform"]
+        UI["UI thread (Slint)<br/>tray · search · forms · set-up · diagnostics"] <-->|commands / notices| E
+        W["Watcher thread"] -->|reload| UI
     end
     subgraph ED["typlet-editor (opened on demand)"]
-        T["Tauri + Tiptap<br/>snippet editor · settings · setup assistant"]
+        T["Tauri + Tiptap<br/>snippet editor · settings"]
     end
     L[("Snippet library<br/>one JSON file per snippet")]
+    S[("settings.json")]
     E --> P["Platform layer<br/>input · injection · clipboard · focus · hotkeys"]
-    BG -->|reads + watches| L
+    W -->|watches| L
+    W -->|watches| S
     ED -->|writes| L
+    ED -->|writes| S
 ```
 
 ### Components
 
 | Component | Kind | Status | Responsibility |
 |---|---|---|---|
-| `typlet-core` | Library crate | ✅ exists | Snippet format, validation, trigger matching, rendering, storage. No OS access, no `unsafe`. |
-| `typlet-platform` | Library crate | 🗺️ planned | One backend per OS: keyboard input, text injection, clipboard, focused-app detection, global hotkeys. |
-| `typlet` | Binary | 🗺️ planned | The background program: wires core and platform together, shows tray, quick search and forms with Slint. |
-| `typlet-editor` | Binary | 🗺️ planned | The editor window: Tauri with a Tiptap rich-text editor. Started only when needed. |
+| [`typlet-core`](../crates/typlet-core) | Library crate | ✅ | Snippet format, validation, matching, rendering, action plans, search, settings, storage. No OS access, no `unsafe`. |
+| [`typlet-platform`](../crates/typlet-platform) | Library crate | ✅ | One backend per OS: keyboard input, text injection, clipboard, focused app, hotkeys, autostart, paths. |
+| [`typlet`](../crates/typlet) | Binary | ✅ | The background program: engine thread, tray, quick search, forms, new snippet, set-up assistant, diagnostics. |
+| `typlet-editor` | Binary | 🗺️ M4 | The editor window: Tauri with a Tiptap rich-text editor. Started only when needed. |
 
-The two programs communicate through the **snippet library on disk**: the editor writes files, the background program watches the folder and reloads. No network sockets, no shared memory.
+The two programs communicate through **files**: the editor writes snippets and `settings.json`, the background program watches both and reloads. No network sockets, no shared memory.
 
 ## Why two programs
 
 The background program runs all day and sees every keystroke. It is native (Rust + Slint), contains **no browser engine** and **no network code**, and starts its windows instantly because they are created once and only hidden.
 
-Rich-text editing is the one area where web technology is far ahead (Tiptap/ProseMirror). The editor is opened rarely, so it can use a webview without affecting memory use or the attack surface of the keystroke process. See [ADR 0002](adr/0002-native-background-process.md) and [ADR 0003](adr/0003-separate-editor-process.md).
+Rich-text editing is the one area where web technology is far ahead (Tiptap/ProseMirror). The editor is opened rarely, so it can use a webview without affecting memory use or the attack surface of the keystroke process. See [ADR 0002](adr/0002-native-background-process.md) and [ADR 0003](adr/0003-separate-editor-process.md). The set-up assistant and diagnostics need live engine state and therefore live in the background program ([ADR 0010](adr/0010-setup-and-diagnostics-in-background-program.md)).
 
 ## Threads in the background program
 
 | Thread | Does | Must never |
 |---|---|---|
-| Input | Receives raw key events and pushes them into a lock-free queue | Block or do work. Windows silently removes keyboard hooks that respond too slowly. |
-| Engine | Translates keys to characters, runs the matcher, renders, injects | Touch the UI directly |
-| UI (main) | Tray menu, quick search, forms (Slint requires the main thread on macOS) | Run long tasks |
+| Input (`typlet-hook` on Windows; one reader per device plus `typlet-translate` on Linux) | Reads key presses, translates them to characters, recognises hotkeys, pushes events into a channel | Block or do work. Windows silently removes keyboard hooks that respond too slowly. |
+| Engine (`typlet-engine`) | Owns the platform backend: runs the matcher, renders, plans and executes insertions | Touch the UI directly |
+| UI (main) | Tray menu and windows; owns settings and the loaded library | Run long tasks |
+| Watcher (`typlet-watcher`) | Notices changed files, waits until writing has settled (300 ms) and asks the UI to reload | Parse snippets on behalf of the engine |
+
+The UI sends **commands** to the engine (`Library`, `Settings`, `Insert`, `FormCancelled`, `RestoreFocus`, `Quiet`, `Diagnostics`, `Retry`, `Quit`) and receives **notices** (`Started`, `InputFailed`, `ShowSearch`, `ShowForm`, `Selection`, `InsertFailed`, `Diagnostics`). The engine is generic over the platform, so its logic is unit-tested with a fake backend ([`engine.rs`](../crates/typlet/src/engine.rs)).
 
 ## Expansion pipeline
 
@@ -64,14 +71,16 @@ sequenceDiagram
     participant UI as UI (forms)
     participant App as Target app
     OS->>In: key down ':' 's' 'i' 'g'
-    In->>En: events (queue)
-    En->>En: matcher: Expand(:sig, 4 chars)
+    In->>En: Char events (channel)
+    En->>En: matcher: Expand(:sig)
+    En->>En: focused app? password field? app rule?
     opt snippet has form fields
-        En->>UI: show form
-        UI-->>En: field values
+        En->>App: delete trigger
+        En->>UI: ShowForm
+        UI-->>En: Insert with field values
     end
-    En->>En: render (plain, HTML, RTF)
-    En->>App: delete 4 chars (backspaces)
+    En->>En: render (plain, HTML, RTF) → plan actions
+    En->>App: delete trigger (Backspace × n)
     alt short plain text
         En->>App: type text
     else long, multi-line or formatted
@@ -82,17 +91,24 @@ sequenceDiagram
 
 ### Matching rules
 
-Implemented in [`matcher.rs`](../crates/typlet-core/src/matcher.rs):
+Implemented in [`matcher.rs`](../crates/typlet-core/src/matcher.rs) ([ADR 0007](adr/0007-instant-expansion.md)):
 
 - Expansion is **instant**: the last character of the trigger fires it.
 - The **longest** matching trigger wins.
-- **Backspace right after an expansion undoes it.**
-- The platform layer sends `Reset` whenever the typing position might have changed: mouse clicks, arrow keys, focus changes, shortcuts. The matcher never guesses across such events.
-- The editor warns about triggers that can never fire (`:c` makes `:cc` unreachable).
+- **Backspace right after an expansion undoes it** and restores the trigger ([`plan_undo`](../crates/typlet-core/src/plan.rs)). On Windows the Backspace is held back so the undo is exact; on Linux it reaches the app and the undo accounts for the deleted character. Formatted (pasted) snippets cannot be undone this way; Backspace then works normally.
+- The platform layer sends `Reset` whenever the typing position might have changed: mouse clicks, arrow keys, Enter, Tab, focus changes, shortcuts, dead keys. The matcher never guesses across such events.
+- Nothing expands while Typlet is paused, while a form is open, or while one of Typlet's own windows with text fields (search, form, new snippet) is open. The set-up assistant's test field is the deliberate exception.
+
+### Before inserting
+
+The engine asks the platform for the focused app and checks, in this order:
+
+1. **Password field** (Windows, via UI Automation) → skip and record it.
+2. **App rule** from the settings ([`settings.rs`](../crates/typlet-core/src/settings.rs)): Typlet can be switched off per app; rules can force typing or pasting, plain text only, Shift+Enter for line breaks, or a longer clipboard delay. Built-in rules cover Excel, chat apps (Teams, WhatsApp, Slack, Discord, Signal, Telegram), browsers and remote desktops; user rules override them.
 
 ### Insertion rules
 
-Implemented in [`render/mod.rs`](../crates/typlet-core/src/render/mod.rs) (`Rendered::insert_method`):
+Implemented in [`render/mod.rs`](../crates/typlet-core/src/render/mod.rs) (`Rendered::insert_method`) and [`plan.rs`](../crates/typlet-core/src/plan.rs):
 
 | Content | Method | Reason |
 |---|---|---|
@@ -101,44 +117,86 @@ Implemented in [`render/mod.rs`](../crates/typlet-core/src/render/mod.rs) (`Rend
 | Formatted text | Paste with HTML, RTF and plain text | Only the clipboard can carry formatting; the app picks the richest format it understands |
 | Long text | Paste | Typing is slow |
 
+A snippet's `insert_mode` overrides the automatic choice; an app rule overrides both.
+
 Clipboard handling in the platform layer:
 
-- The previous clipboard content is saved with **all formats** and restored after pasting.
-- Restoring waits until the target app has read the clipboard; apps that read late (browsers, remote desktops) get longer delays via app profiles.
-- Temporary content is marked as transient so clipboard history (Win+V) and clipboard managers ignore it.
+- The previous clipboard content is saved with **all formats** (Windows) and restored after pasting, unless another program changed the clipboard in the meantime (checked with the clipboard sequence number).
+- Restoring waits until the target app has read the clipboard: 300 ms by default, longer for browsers and remote desktops via app rules.
+- Temporary content is marked as transient (`ExcludeClipboardContentFromMonitorProcessing`, `CanIncludeInClipboardHistory = 0`, `CanUploadToCloudClipboard = 0`), so Win+V history and cloud clipboard ignore it.
+- The clipboard is opened without an owner window, so other programs never wait for Typlet's engine thread.
 - Formatted output carries **no fonts or colours**, so pasted text adopts the style of the document it lands in.
+- Before injecting, the platform waits until the user has released modifier keys, so held keys do not combine with simulated ones.
+
+## Windows of the background program
+
+| Window | Opened by | Notes |
+|---|---|---|
+| Tray menu | Always present | Search, new snippet, editor, snippet folder, pause, start with the computer, set-up, diagnostics, help, quit |
+| Quick search | `Ctrl+Shift+Space`, tray click | Frameless, on top, centred near the mouse; Enter inserts into the previously focused app |
+| Form | A snippet with fields | The trigger is removed first; cancelling types it back |
+| New snippet | `Ctrl+Alt+S` with selected text, tray | Validates the trigger live (empty, spaces, too long, already used) |
+| Set-up assistant | First start, tray | Welcome, permission check, test field, start-up option ([ADR 0010](adr/0010-setup-and-diagnostics-in-background-program.md)) |
+| Diagnostics | Tray, error messages | Live status, library problems, last 20 expansions, a copyable report without typed text |
+| Messages | Errors and notices | Texts are translated in the UI; the program only passes a kind and details |
+
+Focus: when a window opens, the platform remembers the focused window (on Windows the last window of another program the user typed in, if the tray was clicked) and gives the focus back before inserting.
+
+All windows share design tokens ([`theme.slint`](../crates/typlet/ui/theme.slint), [design.md](design.md)) and follow light and dark mode. Texts are English in the source and translated with bundled gettext catalogues ([ADR 0011](adr/0011-interface-translations.md)).
 
 ## Platform backends
 
-| | Windows | Linux (Wayland) | macOS (after V1) |
+| | Windows | Linux (Wayland and X11) | macOS (after V1) |
 |---|---|---|---|
-| Keyboard input | Low-level keyboard hook | evdev (`/dev/input`), user in the `input` group | Event tap (Accessibility permission) |
-| Characters from keys | Layout-aware translation that preserves dead keys (`^`, `´`) | xkbcommon with the user's layout | System layout APIs |
-| Typing | Unicode `SendInput` | uinput virtual keyboard | Event posting |
-| Clipboard | Win32 clipboard with `CF_HTML`, RTF, text | Wayland data device (to be validated on GNOME) | NSPasteboard |
-| Focused app | Foreground window | AT-SPI or a small GNOME Shell extension | Accessibility API |
-| Global hotkeys | `RegisterHotKey` | XDG desktop portal | Carbon / event tap |
-| Tray | Slint system tray | StatusNotifierItem (Ubuntu ships the AppIndicator extension) | Menu bar extra |
+| Keyboard input | Low-level keyboard and mouse hooks on a dedicated thread; injected events ignored | evdev (`/dev/input`), user in the `input` group; Typlet's own virtual keyboard ignored; devices rescanned every 3 s | Event tap (Accessibility permission) |
+| Characters from keys | `ToUnicodeEx` with the foreground window's layout and the "keep keyboard state" flag, so dead keys (`^`, `´`) still work in the app | xkbcommon with the detected layout (GNOME, KDE, `/etc/default/keyboard`, environment) and compose rules | System layout APIs |
+| Typing | Unicode `SendInput` in small batches | uinput virtual keyboard; characters missing from the layout are pasted | Event posting |
+| Clipboard | Win32 clipboard with `CF_UNICODETEXT`, `HTML Format`, `Rich Text Format` | X11 clipboard (XWayland), which GNOME and KDE bridge to Wayland apps | NSPasteboard |
+| Focused app | Executable of the foreground window; password fields via UI Automation (MTA, 300 ms timeouts) | Not available on GNOME Wayland; all apps use the default rule | Accessibility API |
+| Global hotkeys | Detected and swallowed in the keyboard hook ([ADR 0009](adr/0009-hotkeys-in-the-input-layer.md)) | Detected in the evdev stream; the app also receives the keys | Event tap |
+| Tray | `Shell_NotifyIcon` via Slint | StatusNotifierItem via Slint (Ubuntu ships the AppIndicator extension) | Menu bar extra |
+| Autostart | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | `~/.config/autostart/typlet.desktop` (uses `$APPIMAGE` when packaged) | Login item |
 
-Known limits: Windows blocks input into programs running as administrator unless Typlet is signed and installed with UIAccess. GNOME does not reveal the focused window without an extension, so app profiles on GNOME arrive after V1.
+Known limits:
+
+- Windows blocks input into programs running as administrator unless Typlet is signed and installed with UIAccess ([ADR 0008](adr/0008-code-signing.md)).
+- GNOME does not reveal the focused window without an extension, so app rules and password-field detection are unavailable on GNOME in V1.
+- GNOME may show "Typlet is ready" instead of focusing the quick search, because the hotkey did not reach Typlet through the compositor. Clicking the notification opens it.
+- On Linux the user's Backspace after an expansion reaches the app; undo still works for plain text.
+
+## Files
+
+Resolved by [`paths.rs`](../crates/typlet-platform/src/paths.rs):
+
+| | Windows | Linux |
+|---|---|---|
+| Settings | `%APPDATA%\Typlet\config\settings.json` | `~/.config/typlet/settings.json` |
+| Snippet library | `%APPDATA%\Typlet\data\snippets` | `~/.local/share/typlet/snippets` |
+| Log (never contains typed text) | `%APPDATA%\Typlet\data\typlet.log` | `~/.local/share/typlet/typlet.log` |
+| Single-instance lock | `%APPDATA%\Typlet\data\typlet.lock` | `~/.local/share/typlet/typlet.lock` |
+
+The library location can be changed in the settings. Starting Typlet a second time opens the editor (or a notice if it is not installed).
 
 ## Storage
 
-Implemented in [`library.rs`](../crates/typlet-core/src/library.rs). A library is a folder; every snippet is a JSON file named after its UUID; sub-folders are categories. Files are written atomically (temporary file, then rename). A broken file is reported and skipped; it never blocks the rest. The format is specified in [snippet-format.md](snippet-format.md).
+Implemented in [`library.rs`](../crates/typlet-core/src/library.rs). A library is a folder; every snippet is a JSON file named after its UUID; sub-folders are categories. Files are written atomically (temporary file, then rename). A broken file is reported in diagnostics and skipped; it never blocks the rest. The format is specified in [snippet-format.md](snippet-format.md). On the very first start Typlet creates five example snippets in the user's language.
 
 ## Security and privacy model
 
 | Rule | Where it is enforced |
 |---|---|
 | Keep only as many typed characters as the longest trigger | `Matcher` (core) |
-| Never write keystrokes to disk or logs | Code review rule; no logging of input events |
-| No network access in the background program | No network dependencies in its crates; `cargo-deny` in CI |
-| Pause in password fields | Platform layer (UI Automation on Windows, secure input on macOS, AT-SPI on Linux) |
+| Never write keystrokes or snippet text to disk or logs | Code review rule; the engine logs outcomes only; the diagnostics history holds app names and outcomes in memory |
+| No network access in the background program | No network dependencies in its crates; `cargo-deny` in CI; "Help" opens the browser instead |
+| Pause in password fields | Platform layer (UI Automation on Windows); not available on GNOME |
 | Render links only for `http`, `https` and `mailto` | Renderer (core) |
 | `typlet-core` contains no `unsafe` code | `#![forbid(unsafe_code)]` |
+| Temporary clipboard content stays out of clipboard history and cloud sync | Windows clipboard backend |
 
 ## Testing strategy
 
 - **Core:** unit tests per module plus integration tests. The examples in [docs/examples](examples/) are loaded and rendered in CI, so the documentation cannot drift from the format.
-- **Platform layer:** thin by design; tested manually against a matrix of the most-used applications (browsers, Office, Teams, WhatsApp, LibreOffice, Thunderbird, Slack, VS Code, terminals) on Windows and Linux.
-- **CI:** formatting, clippy, tests on Linux and Windows, documentation build and `cargo-deny` on every push.
+- **Engine:** unit tests with a fake platform cover expansion, undo, forms, hotkeys, app rules, password fields, quiet mode and failures.
+- **Platform layer:** thin by design; virtual-key mapping and layout parsing are unit-tested; the rest is tested manually with the [test checklist](testing/manual-test-checklist.md) against the most-used applications on Windows and Linux.
+- **User interface:** every window is rendered with sample data by the [screenshot example](../crates/typlet/examples/screenshots.rs), in English and German; CI checks that every text has a German translation.
+- **CI:** formatting, translations, clippy, tests on Linux and Windows, documentation build, `cargo-deny`, and unsigned test builds for Windows and Linux on every pull request.

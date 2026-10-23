@@ -1,6 +1,6 @@
 # 0003. Rich-text editor as a separate Tauri + Tiptap program
 
-- Status: Accepted
+- Status: Accepted; the set-up assistant part is superseded by [ADR 0010](0010-setup-and-diagnostics-in-background-program.md)
 - Date: 2026-10-23
 
 ## Context

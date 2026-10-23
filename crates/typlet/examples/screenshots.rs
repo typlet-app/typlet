@@ -118,6 +118,7 @@ struct Texts {
     form_label: &'static str,
     form_fields: Vec<(&'static str, FieldKind, &'static str, Vec<&'static str>)>,
     selection: &'static str,
+    new_trigger: &'static str,
     examples: Vec<(&'static str, &'static str)>,
 }
 
@@ -157,6 +158,7 @@ fn german() -> Texts {
             ("Rückruf erwünscht?", FieldKind::YesNo, "Ja", vec![]),
         ],
         selection: "Vielen Dank für Ihre Anfrage. Wir melden uns innerhalb von zwei Werktagen bei Ihnen.",
+        new_trigger: ":anfrage",
         examples: vec![
             (":mfg", "Grußformel"),
             (":datum", "Heutiges Datum"),
@@ -198,6 +200,7 @@ fn english() -> Texts {
             ("Call back?", FieldKind::YesNo, "Yes", vec![]),
         ],
         selection: "Thank you for your request. We will get back to you within two working days.",
+        new_trigger: ":request",
         examples: vec![
             (":br", "Closing"),
             (":date", "Today's date"),
@@ -246,7 +249,7 @@ fn render_all(texts: &Texts, out: &Path) {
 
     let create = CreateWindow::new().unwrap();
     create.set_text(texts.selection.into());
-    create.set_trigger(":anfrage".into());
+    create.set_trigger(texts.new_trigger.into());
     create.set_problem(TriggerProblem::None);
     capture(&create, 480, 470, &out.join("new-snippet.png"));
 

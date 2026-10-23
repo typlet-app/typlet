@@ -341,7 +341,7 @@ impl App {
         tray.on_toggle_autostart(with(|app| app.toggle_autostart()));
         tray.on_setup(with(|app| app.show_setup()));
         tray.on_diagnostics(with(|app| app.show_diagnostics()));
-        tray.on_help(|| os::open_url(os::HELP_URL));
+        tray.on_help(with(|app| os::open_url(os::help_url(app.german()))));
         tray.on_quit(|| {
             let _ = slint::quit_event_loop();
         });
@@ -500,8 +500,17 @@ impl App {
             Notice::ShowSearch => self.show_search(),
             Notice::ShowForm(id) => self.show_form(id),
             Notice::Selection(Some(text)) => self.show_create(text),
-            Notice::Selection(None) => self.show_message(MessageKind::NoSelection, ""),
-            Notice::InsertFailed(error) => self.show_message(MessageKind::InsertFailed, &error),
+            Notice::Selection(None) => {
+                if self.settings.borrow().notifications {
+                    self.show_message(MessageKind::NoSelection, "");
+                }
+            }
+            Notice::InsertFailed(error) => {
+                // Failures are always in diagnostics; the message is optional.
+                if self.settings.borrow().notifications {
+                    self.show_message(MessageKind::InsertFailed, &error);
+                }
+            }
             Notice::Diagnostics(history) => self.fill_diagnostics(&history),
         }
     }
