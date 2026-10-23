@@ -1,0 +1,43 @@
+[package]
+name = "typlet-editor"
+description = "The Typlet editor: create and edit snippets with formatting, placeholders and forms, change settings, import from espanso."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+publish = false
+
+[[bin]]
+name = "typlet-editor"
+path = "src/main.rs"
+
+[dependencies]
+typlet-core.workspace = true
+typlet-import.workspace = true
+typlet-platform.workspace = true
+chrono.workspace = true
+directories.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2.12", features = [] }
+tauri-plugin-dialog = "2.8"
+tauri-plugin-single-instance = "2.5"
+
+[build-dependencies]
+tauri-build = { version = "2.5", features = [] }
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[features]
+# Enabled by `tauri build`: serve the bundled frontend instead of the dev server.
+custom-protocol = ["tauri/custom-protocol"]
+
+[lints]
+workspace = true
