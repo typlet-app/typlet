@@ -33,6 +33,7 @@ SHOTS = [
     ("editor-form.png", f"open={FORM}", None),
     ("editor-date.png", f"open={FORM}", ".chip-date"),
     ("editor-settings.png", "settings", None),
+    ("editor-update.png", "update", None),
 ]
 
 

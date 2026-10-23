@@ -127,6 +127,9 @@ pub struct Settings {
     pub library_path: Option<PathBuf>,
     /// Per-application rules, applied after the built-in ones.
     pub app_rules: Vec<AppRule>,
+    /// Look for a new version once a day (the editor does this; the
+    /// background program never connects to the network).
+    pub check_for_updates: bool,
 }
 
 impl Default for Settings {
@@ -142,6 +145,7 @@ impl Default for Settings {
             selection_hotkey: Some(Hotkey::default_selection()),
             library_path: None,
             app_rules: Vec::new(),
+            check_for_updates: true,
         }
     }
 }

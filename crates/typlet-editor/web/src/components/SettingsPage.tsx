@@ -12,6 +12,7 @@ interface Props {
   settings: Settings;
   libraryPath: string;
   onSaved: (settings: Settings) => void;
+  onCheckUpdates: () => void;
 }
 
 const BUILT_IN = [
@@ -26,7 +27,7 @@ const BUILT_IN = [
   "mstsc.exe",
 ];
 
-export function SettingsPage({ settings: initial, libraryPath, onSaved }: Props) {
+export function SettingsPage({ settings: initial, libraryPath, onSaved, onCheckUpdates }: Props) {
   const t = useT();
   const [settings, setSettings] = useState(initial);
   const [status, setStatus] = useState<{ kind: "saved" | "error"; text: string } | null>(null);
@@ -91,6 +92,20 @@ export function SettingsPage({ settings: initial, libraryPath, onSaved }: Props)
           <input type="checkbox" checked={settings.paused} onChange={(e) => set({ paused: e.target.checked })} />
           <span>{t("paused")}</span>
         </label>
+      </section>
+
+      <section className="panel">
+        <h3>{t("updates")}</h3>
+        <label className="row switch">
+          <input type="checkbox" checked={settings.check_for_updates} onChange={(e) => set({ check_for_updates: e.target.checked })} />
+          <span>{t("check_for_updates")}</span>
+        </label>
+        <p className="muted small">{t("check_for_updates_hint")}</p>
+        <div className="row-buttons">
+          <button type="button" className="secondary" onClick={onCheckUpdates}>
+            {t("check_now")}
+          </button>
+        </div>
       </section>
 
       <section className="panel">

@@ -115,6 +115,7 @@ Write recurring parts such as your signature or your address once and insert the
 
 | Entry | What it does |
 |---|---|
+| Install update … | Appears when a new version is available; installs it |
 | Search snippets… | Opens the quick search |
 | New snippet… | Creates a snippet from text you type or paste |
 | Open editor | Opens the editor |
@@ -147,9 +148,19 @@ Common causes:
 
 When you report a problem, use **Copy report** in Diagnostics and paste it into a [GitHub issue](https://github.com/typlet-app/typlet/issues). The report never contains anything you typed.
 
+## Updates
+
+Typlet looks for a new version once a day. When there is one, the tray menu shows **Install update …** and a message asks once whether to install it now. Installing takes about a minute; Typlet restarts afterwards, and your snippets and settings stay as they are. On Ubuntu and Debian you may be asked for your password.
+
+To look yourself, open the editor's **Settings** and click **Check now**. You can switch off the daily check there.
+
+![Updates](images/en/editor-update.png)
+
 ## Privacy
 
 Typlet has to see what you type to recognise triggers. It keeps only the last few characters in memory, never saves or logs what you type, has no internet access in the background program and pauses in password fields.
+
+The only time Typlet goes online is the daily update check, which the editor does: it asks GitHub for the newest version. Like any web request, this shows GitHub your IP address. Your snippets and what you type never leave your computer.
 
 ## Where your data lives
 

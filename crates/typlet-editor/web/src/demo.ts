@@ -140,6 +140,7 @@ const settings: Settings = {
   search_hotkey: "Ctrl+Shift+Space",
   selection_hotkey: "Ctrl+Alt+S",
   app_rules: [{ app: "game.exe", enabled: false }],
+  check_for_updates: true,
 };
 
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -202,6 +203,7 @@ mockIPC(
           default_espanso_dir: null,
           open_snippet: new URLSearchParams(location.search).get("open"),
           open_settings: new URLSearchParams(location.search).has("settings"),
+          open_update: new URLSearchParams(location.search).has("update"),
           system_german: german,
           background_running: true,
         };
@@ -220,6 +222,17 @@ mockIPC(
       }
       case "parse_hotkey":
         return args["text"];
+      case "update_status":
+      case "check_for_update":
+        return {
+          current: "0.1.0",
+          // Only the update screenshot shows an available update.
+          available: new URLSearchParams(location.search).has("update")
+            ? { version: "0.2.0", notes: german ? "Schneller und mit Statistik." : "Faster, with statistics.", date: "2026-11-02T10:00:00Z" }
+            : null,
+          checked_at: "2026-11-02 10:15",
+          can_install: true,
+        };
       case "plugin:dialog|ask":
         return true;
       default:

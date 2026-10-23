@@ -5,12 +5,13 @@ The editor of [Typlet](../../README.md): a window for creating and editing snipp
 | Part | Source | What it does |
 |---|---|---|
 | Commands | `src/commands.rs` | All file access through `typlet-core`: load and save snippets by id, delete, validate, preview with the real renderer, settings, espanso import |
-| Window | `src/main.rs` | Single instance (a second start focuses the window and passes `--open <id>` / `--settings`), starts the background program if needed, holds the editor-focus lock |
+| Window | `src/main.rs` | Single instance (a second start focuses the window and passes `--open <id>` / `--settings` / `--update`), starts the background program if needed, holds the editor-focus lock |
+| Updates | `src/updates.rs` | Checks for and installs signed updates; `--check-updates` checks without a window for the background program ([ADR 0015](../../docs/adr/0015-automatic-updates.md)) |
 | Interface | `web/src` | Snippet list, rich-text editor with placeholder chips (including other snippets), form fields, preview, settings, import |
 | Conversion | `web/src/convert.ts` | Typlet document ⇄ Tiptap JSON, tested against every documented example |
 | Texts | `web/src/i18n/{en,de}.json` | English and German |
 
-The editor never talks to the background program directly. It writes files; the background program notices and reloads. While the editor window has the keyboard focus it holds a lock file, so triggers typed into the editor are not expanded ([ADR 0012](../../docs/adr/0012-editor-focus-lock.md)).
+The editor is the only part of Typlet that goes online, and only for updates. It never talks to the background program directly. It writes files; the background program notices and reloads. While the editor window has the keyboard focus it holds a lock file, so triggers typed into the editor are not expanded ([ADR 0012](../../docs/adr/0012-editor-focus-lock.md)).
 
 ## Developing
 

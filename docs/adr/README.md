@@ -18,6 +18,7 @@ An ADR captures one significant decision: the context, what was decided and what
 | [0012](0012-editor-focus-lock.md) | The editor signals its focus with a lock file | Accepted |
 | [0013](0013-installers.md) | One installer per platform, built by the Tauri bundler | Accepted |
 | [0014](0014-raw-input-on-windows.md) | Raw Input and registered shortcuts on Windows | Accepted |
+| [0015](0015-automatic-updates.md) | Automatic updates through the editor | Accepted |
 | [0016](0016-snippets-inside-snippets.md) | Snippets inside snippets, referenced by id | Accepted |
 
 ## Writing a new ADR

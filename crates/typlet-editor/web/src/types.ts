@@ -96,6 +96,7 @@ export interface Settings {
   selection_hotkey: string | null;
   library_path?: string | null;
   app_rules: AppRule[];
+  check_for_updates: boolean;
 }
 
 export interface Preview {
@@ -137,6 +138,15 @@ export interface AppInfo {
   default_espanso_dir: string | null;
   open_snippet: string | null;
   open_settings: boolean;
+  open_update: boolean;
   system_german: boolean;
   background_running: boolean;
+}
+
+/** What is known about new versions (src/updates.rs). */
+export interface UpdateView {
+  current: string;
+  available: { version: string; notes?: string; date?: string } | null;
+  checked_at: string | null;
+  can_install: boolean;
 }

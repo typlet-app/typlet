@@ -771,6 +771,43 @@ button.danger,
   font-size: 12px;
 }
 
+/* ----- updates ----------------------------------------------------------- */
+
+.muted {
+  color: var(--muted);
+}
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--selected);
+  color: var(--text);
+  width: 100%;
+  max-width: 560px;
+}
+
+.release-notes {
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.progress {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--hover);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand), var(--brand-end));
+  transition: width 0.2s ease;
+}
+
 /* ----- snippets inside snippets ----- */
 
 .chip-snippet {

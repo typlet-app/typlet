@@ -15,7 +15,7 @@ publish = false
 
 [dependencies]
 # German day and month names in dates.
-chrono = { workspace = true, features = ["unstable-locales"] }
+chrono = { workspace = true, features = ["unstable-locales", "serde"] }
 serde.workspace = true
 serde_json.workspace = true
 tempfile.workspace = true

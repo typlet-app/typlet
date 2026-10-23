@@ -3,6 +3,8 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::thread;
+use std::time::{Duration, Instant};
 
 /// The online user guide in the interface language.
 pub(crate) fn help_url(german: bool) -> &'static str {
@@ -36,6 +38,33 @@ pub(crate) fn launch_editor(args: &[&str]) -> bool {
         Err(error) => {
             log::warn!("cannot start the editor {}: {error}", path.display());
             false
+        }
+    }
+}
+
+/// Runs the editor with `args` and waits until it ends, at most `timeout`
+/// (then it is stopped). Returns `true` if it ran and succeeded.
+pub(crate) fn run_editor_and_wait(args: &[&str], timeout: Duration) -> bool {
+    let Some(path) = editor_path() else {
+        return false;
+    };
+    let mut child = match Command::new(&path).args(args).spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            log::warn!("cannot start the editor {}: {error}", path.display());
+            return false;
+        }
+    };
+    let start = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return status.success(),
+            Ok(None) if start.elapsed() < timeout => thread::sleep(Duration::from_millis(500)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return false;
+            }
         }
     }
 }

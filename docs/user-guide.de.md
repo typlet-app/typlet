@@ -115,6 +115,7 @@ Schreibe wiederkehrende Teile wie deine Signatur oder deine Adresse einmal und f
 
 | Eintrag | Was er macht |
 |---|---|
+| Update … installieren | Erscheint, wenn eine neue Version da ist; installiert sie |
 | Textbausteine suchen … | Öffnet die Schnellsuche |
 | Neuer Textbaustein … | Legt einen Textbaustein aus getipptem oder eingefügtem Text an |
 | Editor öffnen | Öffnet den Editor |
@@ -147,9 +148,19 @@ Häufige Ursachen:
 
 Wenn du ein Problem meldest, nutze **Bericht kopieren** in der Diagnose und füge ihn in ein [GitHub-Issue](https://github.com/typlet-app/typlet/issues) ein. Der Bericht enthält nie, was du getippt hast.
 
+## Updates
+
+Typlet sucht einmal am Tag nach einer neuen Version. Gibt es eine, zeigt das Menü im Infobereich **Update … installieren**, und eine Meldung fragt einmal, ob du sie gleich installieren möchtest. Das dauert etwa eine Minute; danach startet Typlet neu, und deine Textbausteine und Einstellungen bleiben erhalten. Unter Ubuntu und Debian wirst du eventuell nach deinem Passwort gefragt.
+
+Selbst nachsehen kannst du in den **Einstellungen** des Editors mit **Jetzt suchen**. Dort lässt sich die tägliche Suche auch ausschalten.
+
+![Updates](images/de/editor-update.png)
+
 ## Datenschutz
 
 Typlet muss sehen, was du tippst, um Kürzel zu erkennen. Es behält nur die letzten paar Zeichen im Speicher, speichert oder protokolliert nie, was du tippst, hat im Hintergrundprogramm keinen Internetzugriff und pausiert in Passwortfeldern.
+
+Online geht Typlet nur für die tägliche Suche nach Updates, und die übernimmt der Editor: Er fragt bei GitHub nach der neuesten Version. Wie bei jeder Anfrage im Internet sieht GitHub dabei deine IP-Adresse. Deine Textbausteine und das, was du tippst, verlassen nie deinen Computer.
 
 ## Wo deine Daten liegen
 

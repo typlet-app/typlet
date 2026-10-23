@@ -15,6 +15,7 @@
 //! * [`search`]: finding snippets by trigger, name and text
 //! * [`settings`]: user settings and per-application rules
 //! * [`hotkey`]: keyboard shortcuts
+//! * [`update`]: what is known about new versions
 //!
 //! Platform crates feed keystrokes into a [`matcher::Matcher`], render the
 //! matched [`snippet::Snippet`] with [`render::render`], turn the result into
@@ -33,6 +34,7 @@ pub mod render;
 pub mod search;
 pub mod settings;
 pub mod snippet;
+pub mod update;
 
 pub use document::{Block, Document, Inline, Marks};
 pub use hotkey::{Hotkey, HotkeyError, Key};
@@ -46,3 +48,4 @@ pub use render::{
 pub use search::SearchIndex;
 pub use settings::{AppRule, EffectiveRule, Language, NewlineMode, Settings, SettingsError};
 pub use snippet::{FieldDef, FieldKind, InsertMode, Snippet, SnippetId, ValidationError};
+pub use update::{AvailableUpdate, UpdateState};

@@ -6,13 +6,15 @@ use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 
 use crossbeam_channel::Sender;
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use typlet_core::snippet::validate_trigger;
 use typlet_core::{
     DateLanguage, Document, FieldKind as CoreFieldKind, Hotkey, Language, Library, RenderContext,
-    Settings, Snippet, SnippetId, ValidationError, nesting, render,
+    Settings, Snippet, SnippetId, UpdateState, ValidationError, nesting, render,
 };
 use typlet_platform::paths::Paths;
 use typlet_platform::{Platform, autostart};
@@ -31,6 +33,13 @@ use crate::watcher::{Change, FileWatcher};
 
 /// At most this many search results are shown.
 const MAX_RESULTS: usize = 100;
+
+/// The first update check waits until the login rush is over.
+const FIRST_UPDATE_CHECK: Duration = Duration::from_secs(120);
+/// How often Typlet looks whether a daily update check is due.
+const UPDATE_TICK: Duration = Duration::from_secs(30 * 60);
+/// A check that takes longer than this is stopped.
+const UPDATE_CHECK_TIMEOUT: Duration = Duration::from_secs(180);
 
 thread_local! {
     static APP: RefCell<Option<Rc<App>>> = const { RefCell::new(None) };
@@ -102,6 +111,9 @@ pub(crate) struct App {
     test_expected: RefCell<String>,
     /// Shortcuts already reported as used by another program.
     taken_hotkeys: RefCell<HashSet<Hotkey>>,
+    /// Starts the daily update check.
+    update_timer: slint::Timer,
+    update_check_running: Cell<bool>,
 }
 
 /// Loads the settings; a broken file falls back to the defaults.
@@ -252,15 +264,29 @@ pub(crate) fn run(paths: Paths, options: StartOptions) -> Result<(), Box<dyn std
         quiet: Cell::new(false),
         test_expected: RefCell::new(String::new()),
         taken_hotkeys: RefCell::new(HashSet::new()),
+        update_timer: slint::Timer::default(),
+        update_check_running: Cell::new(false),
     });
     APP.with(|cell| *cell.borrow_mut() = Some(Rc::clone(&app)));
 
-    let watcher = FileWatcher::start(&root, &app.paths.settings_file, |change| {
-        post(move |app| match change {
-            Change::Library => app.reload_library(),
-            Change::Settings => app.reload_settings(),
-        });
-    });
+    // A request left over from an earlier update must not stop this start.
+    let _ = std::fs::remove_file(&app.paths.quit_request);
+    let watcher = FileWatcher::start(
+        &root,
+        &app.paths.settings_file,
+        &app.paths.quit_request,
+        |change| {
+            post(move |app| match change {
+                Change::Library => app.reload_library(),
+                Change::Settings => app.reload_settings(),
+                Change::Quit => {
+                    log::info!("quitting for an update");
+                    let _ = std::fs::remove_file(&app.paths.quit_request);
+                    let _ = slint::quit_event_loop();
+                }
+            });
+        },
+    );
     match watcher {
         Ok(watcher) => *app.watcher.borrow_mut() = Some(watcher),
         Err(error) => log::warn!("cannot watch for changes: {error}"),
@@ -269,6 +295,7 @@ pub(crate) fn run(paths: Paths, options: StartOptions) -> Result<(), Box<dyn std
     app.wire();
     app.refresh_tray();
     app.windows.tray.show()?;
+    app.start_update_checks();
 
     if let Some(error) = settings_error {
         app.show_message(MessageKind::SettingsProblem, &error);
@@ -348,6 +375,7 @@ impl App {
         tray.on_search(with(|app| app.show_search()));
         tray.on_new_snippet(with(|app| app.show_create(String::new())));
         tray.on_open_editor(with(|app| app.open_editor(&[])));
+        tray.on_install_update(with(|app| app.open_editor(&["--update"])));
         tray.on_open_folder(with(|app| os::open_folder(&app.library.borrow().root)));
         tray.on_toggle_pause(with(|app| {
             app.update_settings(|settings| settings.paused = !settings.paused);
@@ -491,6 +519,7 @@ impl App {
             MessageKind::InputFailed => app.show_setup(),
             MessageKind::InsertFailed | MessageKind::LibraryProblem => app.show_diagnostics(),
             MessageKind::HotkeyTaken => app.open_editor(&["--settings"]),
+            MessageKind::UpdateAvailable => app.open_editor(&["--update"]),
             _ => {}
         }));
     }
@@ -634,6 +663,75 @@ impl App {
         tray.set_search_shortcut(self.hotkey_label().into());
         self.windows.setup.set_autostart(settings.start_with_system);
         self.windows.diagnostics.set_paused(settings.paused);
+    }
+
+    // ----- updates ----------------------------------------------------------
+
+    /// Offers a known update right away and checks once a day. The check
+    /// runs in the editor (`--check-updates`); this program never connects
+    /// to the network.
+    fn start_update_checks(self: &Rc<Self>) {
+        self.apply_update_state();
+        let weak = Rc::downgrade(self);
+        slint::Timer::single_shot(FIRST_UPDATE_CHECK, move || {
+            if let Some(app) = weak.upgrade() {
+                app.maybe_check_updates();
+            }
+        });
+        let weak = Rc::downgrade(self);
+        self.update_timer
+            .start(slint::TimerMode::Repeated, UPDATE_TICK, move || {
+                if let Some(app) = weak.upgrade() {
+                    app.maybe_check_updates();
+                }
+            });
+    }
+
+    fn maybe_check_updates(&self) {
+        if !self.settings.borrow().check_for_updates || self.update_check_running.get() {
+            return;
+        }
+        let state = UpdateState::load(&self.paths.update_state);
+        if !state.is_due(chrono::Local::now().naive_local()) {
+            self.apply_update_state();
+            return;
+        }
+        self.update_check_running.set(true);
+        let spawned = thread::Builder::new()
+            .name("typlet-update-check".into())
+            .spawn(|| {
+                let checked = os::run_editor_and_wait(&["--check-updates"], UPDATE_CHECK_TIMEOUT);
+                log::info!("update check finished (success: {checked})");
+                post(|app| {
+                    app.update_check_running.set(false);
+                    app.apply_update_state();
+                });
+            });
+        if let Err(error) = spawned {
+            log::warn!("cannot start the update check: {error}");
+            self.update_check_running.set(false);
+        }
+    }
+
+    /// Shows a newer version in the tray menu and announces it once.
+    fn apply_update_state(&self) {
+        let mut state = UpdateState::load(&self.paths.update_state);
+        let current = env!("CARGO_PKG_VERSION");
+        let offered = state
+            .offer(current)
+            .map(|update| update.version.clone())
+            .unwrap_or_default();
+        self.windows.tray.set_update_version(offered.into());
+        let Some(version) = state.to_announce(current).map(|u| u.version.clone()) else {
+            return;
+        };
+        if self.settings.borrow().notifications {
+            self.show_message(MessageKind::UpdateAvailable, &version);
+        }
+        state.announced = Some(version);
+        if let Err(error) = state.save(&self.paths.update_state) {
+            log::warn!("cannot save the update state: {error}");
+        }
     }
 
     fn open_editor(&self, args: &[&str]) {

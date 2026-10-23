@@ -43,7 +43,7 @@ flowchart TB
 | [`typlet-editor`](../crates/typlet-editor) | Binary | ✅ | The editor window: Tauri with a React + Tiptap interface. Snippets, settings, espanso import. Started only when needed. |
 | [`typlet-import`](../crates/typlet-import) | Library crate | ✅ | Converts espanso match files into Typlet snippets. Pure, no writing. |
 
-The two programs communicate through **files**: the editor writes snippets and `settings.json`, the background program watches both and reloads. While the editor has the keyboard focus it holds a lock file, so the background program does not expand triggers typed into it ([ADR 0012](adr/0012-editor-focus-lock.md)). No network sockets, no shared memory. Starting either program also starts or shows the other: the editor launches the background program if it is not running, and a second start of the background program opens the editor.
+The two programs communicate through **files**: the editor writes snippets and `settings.json`, the background program watches both and reloads. While the editor has the keyboard focus it holds a lock file, so the background program does not expand triggers typed into it ([ADR 0012](adr/0012-editor-focus-lock.md)). No network sockets, no shared memory. The only network access in all of Typlet is the editor's update check ([ADR 0015](adr/0015-automatic-updates.md)). Starting either program also starts or shows the other: the editor launches the background program if it is not running, and a second start of the background program opens the editor.
 
 ## Why two programs
 
@@ -177,7 +177,25 @@ flowchart LR
 - The snippet picker only offers snippets that do not lead back to the snippet being edited ([`nesting.ts`](../crates/typlet-editor/web/src/nesting.ts)); deleting a snippet that others include asks first.
 - Trigger problems (empty, spaces, duplicates, triggers that can never fire) are checked live in the interface with the same rules as the core ([`conflicts.ts`](../crates/typlet-editor/web/src/conflicts.ts)).
 - The webview may only load the bundled interface (strict content security policy) and may only use the dialog plugin besides Typlet's own commands ([`capabilities/default.json`](../crates/typlet-editor/capabilities/default.json)).
-- The editor is a single instance: a second start focuses the window and passes `--open <id>` or `--settings` (used by the background program's "Edit in the editor").
+- The editor is a single instance: a second start focuses the window and passes `--open <id>`, `--settings` or `--update` (used by the background program's "Edit in the editor" and "Install update").
+
+### Updates
+
+```mermaid
+sequenceDiagram
+    participant B as Background program (offline)
+    participant E as Editor
+    participant G as GitHub release
+    B->>E: once a day: typlet-editor --check-updates (no window)
+    E->>G: latest.json
+    E->>B: update.json (version, notes)
+    B->>B: tray "Install update 0.2.0", message once
+    B->>E: typlet-editor --update
+    E->>G: installer (signature checked)
+    E->>E: install, restart (Linux: quit-request stops the old background program)
+```
+
+The updater ([`updates.rs`](../crates/typlet-editor/src/updates.rs)) uses Tauri's plugin with the public key and feed in [`tauri.conf.json`](../crates/typlet-editor/tauri.conf.json). The window is created in code rather than from the configuration, so `--check-updates` runs without one. Development builds cannot replace themselves and link to the download page.
 
 ## Platform backends
 
@@ -210,6 +228,8 @@ Resolved by [`paths.rs`](../crates/typlet-platform/src/paths.rs):
 | Snippet library | `%APPDATA%\Typlet\data\snippets` | `~/.local/share/typlet/snippets` |
 | Log (never contains typed text) | `%APPDATA%\Typlet\data\typlet.log` | `~/.local/share/typlet/typlet.log` |
 | Single-instance lock | `%APPDATA%\Typlet\data\typlet.lock` | `~/.local/share/typlet/typlet.lock` |
+| Update state (newest version found) | `%APPDATA%\Typlet\data\update.json` | `~/.local/share/typlet/update.json` |
+| Quit request (written by the editor after a Linux update) | `%APPDATA%\Typlet\config\quit-request` | `~/.config/typlet/quit-request` |
 
 The library location can be changed in the settings. Starting Typlet a second time opens the editor (or a notice if it is not installed).
 
@@ -223,7 +243,8 @@ Implemented in [`library.rs`](../crates/typlet-core/src/library.rs). A library i
 |---|---|
 | Keep only as many typed characters as the longest trigger | `Matcher` (core) |
 | Never write keystrokes or snippet text to disk or logs | Code review rule; the engine logs outcomes only; the diagnostics history holds app names and outcomes in memory |
-| No network access in the background program | No network dependencies in its crates; `cargo-deny` in CI; "Help" opens the browser instead |
+| No network access in the background program | No network dependencies in its crates; `cargo-deny` in CI; "Help" opens the browser instead; update checks run in the editor |
+| Updates are genuine | Signed with the project's update key, including the version; the updater rejects anything else ([ADR 0015](adr/0015-automatic-updates.md)); a test checks the configured public key |
 | The editor's webview loads only the bundled interface | Content security policy in [`tauri.conf.json`](../crates/typlet-editor/tauri.conf.json); minimal capabilities |
 | The editor cannot write outside the library | Snippets addressed by id; category names validated in `typlet-core` |
 | Pause in password fields | Platform layer (UI Automation on Windows); not available on GNOME |
