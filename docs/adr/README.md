@@ -15,6 +15,7 @@ An ADR captures one significant decision: the context, what was decided and what
 | [0009](0009-hotkeys-in-the-input-layer.md) | Global hotkeys are detected in the input layer | Accepted |
 | [0010](0010-setup-and-diagnostics-in-background-program.md) | Set-up assistant and diagnostics live in the background program | Accepted |
 | [0011](0011-interface-translations.md) | Interface texts in English with bundled gettext translations | Accepted |
+| [0012](0012-editor-focus-lock.md) | The editor signals its focus with a lock file | Accepted |
 
 ## Writing a new ADR
 

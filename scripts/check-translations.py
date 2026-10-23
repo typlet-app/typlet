@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Checks that every user-visible text in the Slint UI has a German translation.
+"""Checks that every user-visible text has a German translation.
 
 Usage: python3 scripts/check-translations.py [--list]
 
-Finds all @tr("...") strings in crates/typlet/ui/*.slint and compares them
-with crates/typlet/lang/de/LC_MESSAGES/typlet.po. Exits with an error if a
-translation is missing or empty, and warns about translations nobody uses.
+Background program: finds all @tr("...") strings in crates/typlet/ui/*.slint
+and compares them with crates/typlet/lang/de/LC_MESSAGES/typlet.po.
 With --list it prints the missing entries in .po syntax, ready to fill in.
+
+Editor: compares the keys of crates/typlet-editor/web/src/i18n/en.json and
+de.json and rejects empty texts.
+
+Exits with an error if a translation is missing or empty, and warns about
+translations nobody uses.
 """
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -17,6 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 UI = ROOT / "crates" / "typlet" / "ui"
 PO = ROOT / "crates" / "typlet" / "lang" / "de" / "LC_MESSAGES" / "typlet.po"
+EDITOR_I18N = ROOT / "crates" / "typlet-editor" / "web" / "src" / "i18n"
 
 TR = re.compile(r'@tr\(\s*"((?:[^"\\]|\\.)*)"(?:\s*\|\s*"((?:[^"\\]|\\.)*)")?')
 
@@ -50,7 +57,31 @@ def po_entries():
     return entries
 
 
+def check_editor():
+    """Returns the number of problems in the editor's translation tables."""
+    en_path, de_path = EDITOR_I18N / "en.json", EDITOR_I18N / "de.json"
+    if not en_path.exists():
+        return 0
+    en = json.loads(en_path.read_text(encoding="utf-8"))
+    de = json.loads(de_path.read_text(encoding="utf-8"))
+    problems = 0
+    for key in sorted(set(en) - set(de)):
+        print(f"error: editor text without German translation: {key}", file=sys.stderr)
+        problems += 1
+    for key in sorted(set(de) - set(en)):
+        print(f"error: German editor text without English original: {key}", file=sys.stderr)
+        problems += 1
+    for table, name in ((en, "English"), (de, "German")):
+        for key, value in table.items():
+            if not value.strip():
+                print(f"error: empty {name} editor text: {key}", file=sys.stderr)
+                problems += 1
+    print(f"editor: {len(en)} texts, {problems} problems")
+    return problems
+
+
 def main():
+    editor_problems = check_editor()
     strings = ui_strings()
     entries = po_entries()
     missing = [s for s in strings if not any(entries.get(s, []))]
@@ -67,8 +98,8 @@ def main():
                 print('msgstr ""\n')
     for text in missing:
         print(f"error: missing German translation: {text}", file=sys.stderr)
-    print(f"{len(strings)} texts, {len(missing)} missing, {len(unused)} unused")
-    return 1 if missing else 0
+    print(f"background program: {len(strings)} texts, {len(missing)} missing, {len(unused)} unused")
+    return 1 if missing or editor_problems else 0
 
 
 if __name__ == "__main__":

@@ -26,7 +26,7 @@ A friendly, open-source text expander for everyone — not just power users.
 </div>
 
 > [!WARNING]
-> Typlet is in early development. The background program works; the editor and installers are next.
+> Typlet is in early development. The background program and the editor work; installers and signed builds are next.
 > Brave testers can try [unsigned test builds](docs/testing/test-build.md). ⭐ Star or 👀 watch the repository to follow along.
 
 ---
@@ -70,13 +70,18 @@ Tools like this already exist. The good free ones are powerful but expect you to
 | 🩺 Diagnostics with a privacy-safe report | ✅ |
 | 🔐 Pause in password fields (Windows) | ✅ |
 | 🌍 English and German interface | ✅ |
-| ✍️ Visual snippet editor with settings | 🗺️ |
-| 📥 Import from espanso | 🗺️ |
+| ✍️ Visual snippet editor: formatting, placeholder chips, forms, live preview | ✅ |
+| ⚙️ Settings and app rules in the editor | ✅ |
+| 📥 Import from espanso | ✅ |
 | 📦 Installers, signed builds | 🗺️ |
 
 See the [roadmap](docs/roadmap.md) for milestones and what comes after V1 (macOS, sync, team libraries).
 
 ## 📸 Screenshots
+
+**The editor** — formatting, today's date, form fields and the cursor position as chips, with a live preview:
+
+<img src="docs/images/en/editor-form.png" width="800" alt="Editor with a call note snippet: date, form fields and cursor shown as chips, the form's questions below">
 
 | Quick search (`Ctrl+Shift+Space`) | Fill-in form |
 |---|---|
@@ -84,7 +89,7 @@ See the [roadmap](docs/roadmap.md) for milestones and what comes after V1 (macOS
 | **Set-up assistant** | **New snippet from selection** (`Ctrl+Alt+S`) |
 | <img src="docs/images/en/setup-welcome.png" width="420" alt="Welcome page of the set-up assistant with example snippets"> | <img src="docs/images/en/new-snippet.png" width="340" alt="Window to save selected text as a snippet with a trigger"> |
 
-The interface is available in English and German ([German screenshots](docs/images/de)). The editor follows with milestone M4.
+The interface is available in English and German ([German screenshots](docs/images/de)).
 
 ## 🧭 How it works
 
@@ -106,7 +111,9 @@ typlet/
 ├── crates/
 │   ├── typlet-core/      # Platform-independent core: format, matching, rendering, search, storage
 │   ├── typlet-platform/  # Windows and Linux backends: keyboard, typing, clipboard, focus
-│   └── typlet/           # Background program: engine, tray, search, forms, set-up, diagnostics
+│   ├── typlet/           # Background program: engine, tray, search, forms, set-up, diagnostics
+│   ├── typlet-editor/    # Editor: Tauri + React + Tiptap (web interface in web/)
+│   └── typlet-import/    # Import from espanso
 ├── docs/
 │   ├── adr/              # Architecture decision records
 │   ├── examples/         # Example snippet files (tested in CI)
@@ -123,7 +130,7 @@ typlet/
 
 ## 🛠️ Building from source
 
-You need [Rust via rustup](https://rustup.rs). The exact compiler version is pinned in [`rust-toolchain.toml`](rust-toolchain.toml) and installed automatically. On Linux, also install `libxkbcommon-dev libfontconfig1-dev libwayland-dev`.
+You need [Rust via rustup](https://rustup.rs). The exact compiler version is pinned in [`rust-toolchain.toml`](rust-toolchain.toml) and installed automatically. For the editor you also need [Node.js](https://nodejs.org) 22 or newer. On Linux, install `libxkbcommon-dev libfontconfig1-dev libwayland-dev libwebkit2gtk-4.1-dev libdbus-1-dev`.
 
 ```sh
 git clone https://github.com/typlet-app/typlet.git
@@ -131,6 +138,8 @@ cd typlet
 cargo test --workspace
 cargo run -p typlet        # start the background program
 ```
+
+The editor's development setup is described in [crates/typlet-editor](crates/typlet-editor/README.md).
 
 More commands, platform notes and conventions are in [docs/development.md](docs/development.md).
 
@@ -158,4 +167,4 @@ The name and logo are covered by the [trademark policy](TRADEMARKS.md).
 ## 🙏 Acknowledgements
 
 - [espanso](https://espanso.org) showed how powerful an open-source text expander can be and inspired this project.
-- Built with [Rust](https://www.rust-lang.org) and [Slint](https://slint.dev); the editor will use [Tauri](https://tauri.app) and [Tiptap](https://tiptap.dev).
+- Built with [Rust](https://www.rust-lang.org), [Slint](https://slint.dev), [Tauri](https://tauri.app), [React](https://react.dev) and [Tiptap](https://tiptap.dev).

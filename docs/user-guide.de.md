@@ -51,9 +51,41 @@ Manche Textbausteine fragen vor dem Einfügen nach Angaben, zum Beispiel fragt e
 
 - **Aus beliebigem Text:** Text markieren, **Strg+Alt+S** drücken, Kürzel wählen, speichern. Das neue Kürzel funktioniert sofort.
 - **Neuer Textbaustein** im Menü des Infobereichs macht dasselbe mit leerem Text.
-- Der **Editor** (Menü → *Editor öffnen*) kommt mit dem nächsten Meilenstein: Formatierung, Datum, Formulare, Kategorien und Einstellungen in einem Fenster.
+- **Im Editor** (Menü → *Editor öffnen*) hast du alle Möglichkeiten.
 
 ![Neuer Textbaustein](images/de/new-snippet.png)
+
+## Der Editor
+
+![Editor](images/de/editor.png)
+
+Links stehen alle deine Textbausteine, nach Kategorien geordnet, mit einem Suchfeld. Klicke einen an, um ihn zu bearbeiten, oder klicke auf **+ Neuer Textbaustein**.
+
+- **Name** und **Kürzel** stehen oben. Typlet warnt sofort, wenn ein anderer Textbaustein dasselbe Kürzel nutzt oder zwei Kürzel sich gegenseitig stören (zum Beispiel `:c` und `:cc`).
+- **Kategorie** ordnet Textbausteine, zum Beispiel `E-Mail` oder `Kunden / Angebote`. Jede Kategorie ist ein Ordner.
+- **Den Text** bearbeitest du wie in einer Textverarbeitung: fett, kursiv, unterstrichen, Links und Listen.
+- **Einfügen** fügt Platzhalter ein, die als farbige Chips erscheinen:
+  - 📅 **Datum** – das heutige Datum beim Einfügen. Klicke auf den Chip, um das Format zu wählen oder um Tage zu verschieben (morgen, in zwei Wochen).
+  - ⌶ **Cursor** – hier steht der Textcursor nach dem Einfügen.
+  - 📋 **Zwischenablage** – was du zuletzt kopiert hast.
+  - ✎ **Formularfeld** – eine Frage, die Typlet vor dem Einfügen stellt; die Antwort landet hier.
+- **Formular** listet die Fragen: Wortlaut, Art der Antwort (Text, mehrere Zeilen, Auswahl, Ja/Nein) und eine vorausgefüllte Antwort.
+- **Vorschau** zeigt den Text genau so, wie er heute eingefügt würde, und ob er getippt oder eingefügt wird.
+- **Erweitert**: immer tippen oder immer einfügen, und eine Tastenkombination, die den Textbaustein ohne Kürzel einfügt.
+
+Klicke auf **Speichern** (oder **Strg+S**). Das Hintergrundprogramm übernimmt die Änderung sofort. Während du im Editor tippst, werden Kürzel nicht ersetzt.
+
+![Formularfelder im Editor](images/de/editor-form.png)
+
+### Einstellungen
+
+**Einstellungen** (unten links) enthalten Sprache, Start mit dem Computer, Meldungen, die Tastenkombinationen, den Ordner mit den Textbausteinen (wähle einen synchronisierten Ordner wie OneDrive, um sie auf mehreren Computern zu nutzen) und **Regeln für Programme**: Typlet in einem Programm ausschalten oder ändern, wie es dort Text einfügt.
+
+![Einstellungen](images/de/editor-settings.png)
+
+### Du kommst von espanso?
+
+**Importieren** (unten links) übernimmt deine espanso-Textbausteine samt Datum, Zwischenablage, Formularen und formatiertem Text. Deine espanso-Dateien bleiben unverändert. Textbausteine, die Skripte ausführen oder reguläre Ausdrücke nutzen, werden als nicht importiert aufgelistet.
 
 ## Das Menü im Infobereich
 
@@ -61,7 +93,7 @@ Manche Textbausteine fragen vor dem Einfügen nach Angaben, zum Beispiel fragt e
 |---|---|
 | Textbausteine suchen … | Öffnet die Schnellsuche |
 | Neuer Textbaustein … | Legt einen Textbaustein aus getipptem oder eingefügtem Text an |
-| Editor öffnen | Öffnet den Editor (sobald installiert) |
+| Editor öffnen | Öffnet den Editor |
 | Ordner mit Textbausteinen öffnen | Zeigt, wo deine Textbausteine gespeichert sind |
 | Typlet pausieren / fortsetzen | Stoppt und startet das Ersetzen; pausiert ist das Symbol grau |
 | Mit dem Computer starten | Startet Typlet bei der Anmeldung |

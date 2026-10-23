@@ -2,7 +2,7 @@
 
 This document describes how Typlet is built and why. Decisions behind it are recorded in the [ADRs](adr/README.md).
 
-> Status: the core, both platform backends and the background program exist. The editor (`typlet-editor`) is the agreed design for milestone M4.
+> Status: the core, both platform backends, the background program and the editor exist. Installers and signing (milestone M5) are next.
 
 ## Goals
 
@@ -22,7 +22,7 @@ flowchart TB
         W["Watcher thread"] -->|reload| UI
     end
     subgraph ED["typlet-editor (opened on demand)"]
-        T["Tauri + Tiptap<br/>snippet editor · settings"]
+        T["Tauri + React + Tiptap<br/>snippet editor · settings · espanso import"]
     end
     L[("Snippet library<br/>one JSON file per snippet")]
     S[("settings.json")]
@@ -40,9 +40,10 @@ flowchart TB
 | [`typlet-core`](../crates/typlet-core) | Library crate | ✅ | Snippet format, validation, matching, rendering, action plans, search, settings, storage. No OS access, no `unsafe`. |
 | [`typlet-platform`](../crates/typlet-platform) | Library crate | ✅ | One backend per OS: keyboard input, text injection, clipboard, focused app, hotkeys, autostart, paths. |
 | [`typlet`](../crates/typlet) | Binary | ✅ | The background program: engine thread, tray, quick search, forms, new snippet, set-up assistant, diagnostics. |
-| `typlet-editor` | Binary | 🗺️ M4 | The editor window: Tauri with a Tiptap rich-text editor. Started only when needed. |
+| [`typlet-editor`](../crates/typlet-editor) | Binary | ✅ | The editor window: Tauri with a React + Tiptap interface. Snippets, settings, espanso import. Started only when needed. |
+| [`typlet-import`](../crates/typlet-import) | Library crate | ✅ | Converts espanso match files into Typlet snippets. Pure, no writing. |
 
-The two programs communicate through **files**: the editor writes snippets and `settings.json`, the background program watches both and reloads. No network sockets, no shared memory.
+The two programs communicate through **files**: the editor writes snippets and `settings.json`, the background program watches both and reloads. While the editor has the keyboard focus it holds a lock file, so the background program does not expand triggers typed into it ([ADR 0012](adr/0012-editor-focus-lock.md)). No network sockets, no shared memory. Starting either program also starts or shows the other: the editor launches the background program if it is not running, and a second start of the background program opens the editor.
 
 ## Why two programs
 
@@ -144,6 +145,35 @@ Focus: when a window opens, the platform remembers the focused window (on Window
 
 All windows share design tokens ([`theme.slint`](../crates/typlet/ui/theme.slint), [design.md](design.md)) and follow light and dark mode. Texts are English in the source and translated with bundled gettext catalogues ([ADR 0011](adr/0011-interface-translations.md)).
 
+## The editor
+
+```mermaid
+flowchart LR
+    subgraph Web["Web interface (React + Tiptap)"]
+        L[Snippet list] --> E[Snippet editor<br/>chips for date, cursor,<br/>clipboard, form fields]
+        E --> C["convert.ts<br/>Tiptap JSON ⇄ Typlet document"]
+        S[Settings] 
+        I[Import]
+    end
+    subgraph Rust["Tauri commands (Rust)"]
+        LIB[typlet-core Library<br/>load · save by id · delete]
+        R[typlet-core render<br/>live preview]
+        SET[Settings load/save]
+        IMP[typlet-import]
+    end
+    C -->|snippet JSON| LIB
+    E -->|preview| R
+    S --> SET
+    I --> IMP --> LIB
+```
+
+- The interface edits snippets in the **file format itself** (TypeScript types in [`types.ts`](../crates/typlet-editor/web/src/types.ts)); only the rich-text part is converted to and from Tiptap ([`convert.ts`](../crates/typlet-editor/web/src/convert.ts)). Tiptap is configured with exactly the formatting a snippet can hold; pasted Word or web content is reduced to that.
+- **All file access happens in Rust** through `typlet-core` ([`commands.rs`](../crates/typlet-editor/src/commands.rs)). The interface addresses snippets by id and categories by name; it never handles file paths for snippets. Category names are validated so they cannot escape the library folder.
+- The **preview** is rendered by the same Rust code that inserts snippets, so what the user sees is what gets inserted.
+- Trigger problems (empty, spaces, duplicates, triggers that can never fire) are checked live in the interface with the same rules as the core ([`conflicts.ts`](../crates/typlet-editor/web/src/conflicts.ts)).
+- The webview may only load the bundled interface (strict content security policy) and may only use the dialog plugin besides Typlet's own commands ([`capabilities/default.json`](../crates/typlet-editor/capabilities/default.json)).
+- The editor is a single instance: a second start focuses the window and passes `--open <id>` or `--settings` (used by the background program's "Edit in the editor").
+
 ## Platform backends
 
 | | Windows | Linux (Wayland and X11) | macOS (after V1) |
@@ -188,6 +218,8 @@ Implemented in [`library.rs`](../crates/typlet-core/src/library.rs). A library i
 | Keep only as many typed characters as the longest trigger | `Matcher` (core) |
 | Never write keystrokes or snippet text to disk or logs | Code review rule; the engine logs outcomes only; the diagnostics history holds app names and outcomes in memory |
 | No network access in the background program | No network dependencies in its crates; `cargo-deny` in CI; "Help" opens the browser instead |
+| The editor's webview loads only the bundled interface | Content security policy in [`tauri.conf.json`](../crates/typlet-editor/tauri.conf.json); minimal capabilities |
+| The editor cannot write outside the library | Snippets addressed by id; category names validated in `typlet-core` |
 | Pause in password fields | Platform layer (UI Automation on Windows); not available on GNOME |
 | Render links only for `http`, `https` and `mailto` | Renderer (core) |
 | `typlet-core` contains no `unsafe` code | `#![forbid(unsafe_code)]` |
@@ -198,5 +230,7 @@ Implemented in [`library.rs`](../crates/typlet-core/src/library.rs). A library i
 - **Core:** unit tests per module plus integration tests. The examples in [docs/examples](examples/) are loaded and rendered in CI, so the documentation cannot drift from the format.
 - **Engine:** unit tests with a fake platform cover expansion, undo, forms, hotkeys, app rules, password fields, quiet mode and failures.
 - **Platform layer:** thin by design; virtual-key mapping and layout parsing are unit-tested; the rest is tested manually with the [test checklist](testing/manual-test-checklist.md) against the most-used applications on Windows and Linux.
-- **User interface:** every window is rendered with sample data by the [screenshot example](../crates/typlet/examples/screenshots.rs), in English and German; CI checks that every text has a German translation.
-- **CI:** formatting, translations, clippy, tests on Linux and Windows, documentation build, `cargo-deny`, and unsigned test builds for Windows and Linux on every pull request.
+- **User interface:** every window of the background program is rendered with sample data by the [screenshot example](../crates/typlet/examples/screenshots.rs), the editor by [`editor-screenshots.py`](../scripts/editor-screenshots.py) in a demo mode, both in English and German; CI checks that every text has a German translation.
+- **Editor:** Rust tests for the commands (saving, moving between categories, deleting by id, conflicts, preview, import); Vitest tests for the document conversion (against every documented example), date formatting, trigger checks and hotkey recording.
+- **Import:** espanso files with every supported and unsupported feature are converted in tests.
+- **CI:** formatting, translations, clippy, tests on Linux and Windows, documentation build, `cargo-deny`, the editor interface (type check, tests, build), and unsigned test builds of both programs for Windows and Linux on every pull request.

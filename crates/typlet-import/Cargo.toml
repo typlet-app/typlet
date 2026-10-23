@@ -1,0 +1,25 @@
+[package]
+name = "typlet-import"
+description = "Imports snippets from other text expanders (espanso) into the Typlet format."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+publish = false
+
+[dependencies]
+typlet-core.workspace = true
+serde.workspace = true
+serde-saphyr = { version = "2", default-features = false, features = ["deserialize"] }
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

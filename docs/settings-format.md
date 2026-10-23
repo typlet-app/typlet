@@ -1,6 +1,6 @@
 # ⚙️ Settings file
 
-Users change settings in the tray menu and (from M4) in the editor; neither needs this file. It is documented because the background program and the editor share it: whoever saves it, the other one notices the change and reloads.
+Users change settings in the tray menu and in the editor; neither needs this file. It is documented because the background program and the editor share it: whoever saves it, the other one notices the change and reloads.
 
 - **Location:** `%APPDATA%\Typlet\config\settings.json` (Windows), `~/.config/typlet/settings.json` (Linux)
 - **Format:** UTF-8 JSON, written atomically

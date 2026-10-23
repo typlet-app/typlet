@@ -29,6 +29,9 @@ pub struct Paths {
     pub log_file: PathBuf,
     /// Lock file that keeps a second background program from starting.
     pub lock_file: PathBuf,
+    /// Held by the editor while its window has the keyboard focus, so the
+    /// background program does not expand triggers typed into the editor.
+    pub editor_focus_lock: PathBuf,
 }
 
 impl Paths {
@@ -45,6 +48,7 @@ impl Paths {
             default_library: data_dir.join("snippets"),
             log_file: data_dir.join("typlet.log"),
             lock_file: data_dir.join("typlet.lock"),
+            editor_focus_lock: data_dir.join("editor-focus.lock"),
             config_dir,
             data_dir,
         })

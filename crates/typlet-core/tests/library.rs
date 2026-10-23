@@ -114,3 +114,27 @@ fn loaded_library_feeds_the_matcher() {
         typlet_core::Outcome::Expand(_)
     ));
 }
+
+#[test]
+fn unsafe_category_names_are_rejected() {
+    let dir = tempfile::tempdir().unwrap();
+    let library = Library::new(dir.path().join("snippets"));
+    let snippet = sample(":x", "X");
+    for bad in [
+        "..", "a/b", "a\\b", "", " lead", "trail.", "con:1", ".hidden",
+    ] {
+        assert!(
+            matches!(
+                library.save(&snippet, &[bad.to_owned()]),
+                Err(LibraryError::InvalidCategory(_))
+            ),
+            "{bad:?} should be rejected"
+        );
+    }
+    assert!(
+        library
+            .save(&snippet, &["E-Mail".to_owned(), "Kunden 2026".to_owned()])
+            .is_ok()
+    );
+    assert!(typlet_core::library::is_valid_category("Grüße"));
+}

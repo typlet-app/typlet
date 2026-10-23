@@ -50,6 +50,9 @@ pub enum LibraryError {
         /// The underlying error.
         source: serde_json::Error,
     },
+    /// A category name cannot be used as a folder name.
+    #[error("invalid category name `{0}`")]
+    InvalidCategory(String),
     /// The snippet breaks a validation rule.
     #[error("{path}: {source}")]
     Invalid {
@@ -149,6 +152,9 @@ impl Library {
     ///
     /// Fails if the snippet is invalid or the file cannot be written.
     pub fn save(&self, snippet: &Snippet, category: &[String]) -> Result<PathBuf, LibraryError> {
+        if let Some(bad) = category.iter().find(|name| !is_valid_category(name)) {
+            return Err(LibraryError::InvalidCategory(bad.clone()));
+        }
         let mut dir = self.root.clone();
         dir.extend(category);
         let path = dir.join(format!("{}.{EXTENSION}", snippet.id));
@@ -218,6 +224,21 @@ impl Library {
             source,
         })
     }
+}
+
+/// Returns `true` if `name` can be used as a category (folder) name on
+/// every supported system: not empty, not `.` or `..`, no path separators or
+/// characters Windows forbids, no leading or trailing spaces or dots.
+#[must_use]
+pub fn is_valid_category(name: &str) -> bool {
+    !name.is_empty()
+        && name.chars().count() <= 64
+        && name.trim() == name
+        && !name.ends_with('.')
+        && !name.starts_with('.')
+        && !name.chars().any(|c| {
+            c.is_control() || matches!(c, '/' | '\\' | '<' | '>' | ':' | '"' | '|' | '?' | '*')
+        })
 }
 
 /// Reads and validates one snippet file.

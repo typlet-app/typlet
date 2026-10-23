@@ -51,9 +51,41 @@ Some snippets ask for details before they are inserted, for example a call note 
 
 - **From any text:** select it, press **Ctrl+Alt+S**, choose a trigger and save. The new trigger works immediately.
 - **New snippet** in the tray menu does the same with an empty text.
-- The **editor** (tray menu → *Open editor*) is coming with the next milestone: formatting, dates, forms, categories and settings in one window.
+- **In the editor** (tray menu → *Open editor*) you have every option.
 
 ![New snippet](images/en/new-snippet.png)
+
+## The editor
+
+![Editor](images/en/editor.png)
+
+On the left are all your snippets, grouped by category, with a search field. Click one to edit it, or click **+ New snippet**.
+
+- **Name** and **trigger** at the top. Typlet warns you straight away if another snippet uses the same trigger or if two triggers get in each other's way (for example `:c` and `:cc`).
+- **Category** groups snippets, for example `E-Mail` or `Customers / Quotes`. Each category is a folder.
+- **The text** is edited like in a word processor: bold, italic, underlined, links and lists.
+- **Insert** adds placeholders, shown as coloured chips:
+  - 📅 **Date** – today's date when the snippet is used. Click the chip to choose the format or shift it by days (tomorrow, in two weeks).
+  - ⌶ **Cursor** – where the text cursor ends up after inserting.
+  - 📋 **Clipboard** – whatever you copied last.
+  - ✎ **Form field** – a question Typlet asks before inserting; the answer is put here.
+- **Form** lists the questions: their wording, the type of answer (text, several lines, a choice, yes/no) and a pre-filled answer.
+- **Preview** shows the text exactly as it will be inserted today, and whether it will be typed or pasted.
+- **Advanced**: always type or always paste, and a keyboard shortcut that inserts the snippet without typing the trigger.
+
+Press **Save** (or **Ctrl+S**). The background program picks up the change at once. While you type in the editor, triggers are not replaced.
+
+![Form fields in the editor](images/en/editor-form.png)
+
+### Settings
+
+**Settings** (bottom left) holds the language, start with the computer, messages, the keyboard shortcuts, the snippet folder (choose a synced folder such as OneDrive to use your snippets on several computers) and **app rules**: switch Typlet off in a program, or change how it inserts text there.
+
+![Settings](images/en/editor-settings.png)
+
+### Coming from espanso?
+
+**Import** (bottom left) takes over your espanso snippets, including dates, the clipboard, forms and formatted text. Your espanso files are not changed. Snippets that run scripts or use regular expressions are listed as not imported.
 
 ## The tray menu
 
@@ -61,7 +93,7 @@ Some snippets ask for details before they are inserted, for example a call note 
 |---|---|
 | Search snippets… | Opens the quick search |
 | New snippet… | Creates a snippet from text you type or paste |
-| Open editor | Opens the editor (once installed) |
+| Open editor | Opens the editor |
 | Open snippet folder | Shows where your snippets are stored |
 | Pause / Resume Typlet | Stops and restarts expanding; the icon turns grey while paused |
 | Start with the computer | Starts Typlet when you log in |

@@ -225,9 +225,12 @@ pub(crate) fn run(paths: Paths, options: StartOptions) -> Result<(), Box<dyn std
     // Translations can only be selected once the UI exists.
     apply_language(&settings);
 
-    let engine = engine::spawn(Arc::clone(&settings), Arc::clone(&library), |notice| {
-        post(move |app| app.on_notice(notice));
-    })?;
+    let engine = engine::spawn(
+        Arc::clone(&settings),
+        Arc::clone(&library),
+        paths.editor_focus_lock.clone(),
+        |notice| post(move |app| app.on_notice(notice)),
+    )?;
 
     let app = Rc::new(App {
         paths,

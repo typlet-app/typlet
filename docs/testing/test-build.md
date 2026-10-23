@@ -6,8 +6,8 @@ Download: open the workflow run on GitHub → **Artifacts** → `typlet-windows-
 
 ## Windows 10/11
 
-1. Unzip the download, for example into `Documents\Typlet`.
-2. Double-click `typlet.exe`.
+1. Unzip the download, for example into `Documents\Typlet`. It contains the background program `typlet.exe` and the editor `typlet-editor.exe`; keep them in the same folder.
+2. Double-click `typlet.exe` (or `typlet-editor.exe`, which starts the background program too).
 3. Windows SmartScreen warns about an unknown publisher, because test builds are not signed. Click **More info → Run anyway**. On PCs with *Smart App Control* switched on, unsigned programs cannot run at all; use a PC without it until the signed beta (see [ADR 0008](../adr/0008-code-signing.md)).
 4. The set-up assistant opens on the first start. Type the example trigger in its test field.
 5. Typlet lives in the notification area next to the clock (click the **^** arrow if the icon is hidden).
@@ -16,7 +16,7 @@ Typlet stores its data in `%APPDATA%\Typlet`. To start fresh, quit Typlet and de
 
 ## Linux (Ubuntu 22.04 or newer)
 
-1. Unpack the download and make the program executable: `chmod +x typlet`.
+1. Unpack the download and make the programs executable: `chmod +x typlet typlet-editor`. The editor needs WebKitGTK (`libwebkit2gtk-4.1-0`, installed on Ubuntu by default).
 2. Give your user access to keyboards and virtual keyboards once, then **log out and back in**:
 
    ```sh
