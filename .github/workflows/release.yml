@@ -73,10 +73,10 @@ jobs:
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libxkbcommon-dev libfontconfig1-dev libwayland-dev libwebkit2gtk-4.1-dev libdbus-1-dev file
+        timeout-minutes: 30
+        run: >-
+          scripts/install-linux-deps.sh
+          libxkbcommon-dev libfontconfig1-dev libwayland-dev libwebkit2gtk-4.1-dev libdbus-1-dev file
 
       - name: Install the editor interface's packages
         working-directory: crates/typlet-editor/web

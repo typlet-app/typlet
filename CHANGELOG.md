@@ -68,6 +68,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- CI: installing Linux packages on the runners is time-limited and retried (`scripts/install-linux-deps.sh`); a hanging package mirror had blocked jobs for hours.
 - ADR 0003 is partly superseded by ADR 0010: the set-up assistant lives in the background program.
 - `cargo-deny` treats "unmaintained" notices as errors only for direct dependencies.
 
