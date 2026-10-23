@@ -7,17 +7,22 @@
 //! paragraphs, bullet and numbered lists) and drop the rest, setting
 //! [`DocBuilder::simplified`].
 
-use typlet_core::{Block, Document, Inline, Marks};
+use typlet_core::{Block, Document, Inline, Marks, SnippetId};
 
 use crate::SkipReason;
 
 /// A placeholder found in the text, already resolved.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Placeholder {
-    Date { format: String, offset_days: i64 },
+    Date {
+        format: String,
+        offset_days: i64,
+    },
     Clipboard,
     Text(String),
     Field(String),
+    /// Another match, by a placeholder id that is linked after the import.
+    Snippet(SnippetId),
 }
 
 /// Resolves `{{name}}` references.
@@ -164,6 +169,7 @@ impl<'a> DocBuilder<'a> {
                 }
             }
             Placeholder::Field(name) => self.push_inline(Inline::Field { name }),
+            Placeholder::Snippet(id) => self.push_inline(Inline::Snippet { id }),
         }
     }
 

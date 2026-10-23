@@ -20,6 +20,7 @@ How Typlet looks and speaks. The background program implements these tokens in [
 | `hover` | `#F1F0FB` | `#2E2E35` | Hovered list rows |
 | `selected` | `#E8E6FD` | `#3730A3` | Selected list row |
 | `chip` / `chip-text` | `#EDE9FE` / `#4C1D95` | `#312E81` / `#E0E7FF` | Trigger chips such as `:mfg` |
+| `chip-snippet` / `chip-snippet-text` | `#DCFCE7` / `#14532D` | `#14532D` / `#DCFCE7` | Chips of snippets included in another snippet (editor) |
 | `success` | `#15803D` | `#4ADE80` | "It works", passed checks |
 | `warning` | `#B45309` | `#FBBF24` | Checks that need attention |
 | `error` | `#B91C1C` | `#F87171` | Failures, invalid input |

@@ -5,9 +5,9 @@
 //!
 //! Currently supported: **espanso** match files (`match/*.yml`). Every
 //! espanso trigger becomes one Typlet snippet. Plain text, HTML and Markdown
-//! replacements, dates, the clipboard, the cursor position (`$|$`) and forms
-//! are converted; shell scripts, regular expressions and images are skipped
-//! with a reason the editor can show.
+//! replacements, dates, the clipboard, the cursor position (`$|$`), forms
+//! and nested matches are converted; shell scripts, regular expressions and
+//! images are skipped with a reason the editor can show.
 //!
 //! This crate reads files but never writes them; the caller decides where
 //! the imported snippets are saved.
@@ -19,8 +19,10 @@ mod rich;
 
 pub use espanso::{import_dir, parse_file};
 
+use std::collections::HashMap;
+
 use serde::Serialize;
-use typlet_core::Snippet;
+use typlet_core::{Snippet, SnippetId};
 
 /// One snippet that was converted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -76,6 +78,9 @@ pub enum SkipReason {
     UnsupportedVariable(String),
     /// The trigger is not usable in Typlet (for example it contains spaces).
     InvalidTrigger(String),
+    /// The match inserts another match (`type: match`) that does not exist
+    /// or could not be imported; the value is that match's trigger.
+    MissingMatch(String),
     /// The converted snippet breaks a Typlet rule.
     Invalid(String),
     /// The whole file could not be read.
@@ -91,4 +96,8 @@ pub struct ImportReport {
     pub skipped: Vec<Skipped>,
     /// Number of files read.
     pub files: usize,
+    /// Included matches that still have to be linked: placeholder id →
+    /// trigger of the included match.
+    #[serde(skip)]
+    includes: HashMap<SnippetId, String>,
 }

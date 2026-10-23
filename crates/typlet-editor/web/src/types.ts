@@ -15,7 +15,9 @@ export type Inline =
   | { type: "date_time"; format: string; offset_days?: number }
   | { type: "cursor" }
   | { type: "clipboard" }
-  | { type: "field"; name: string };
+  | { type: "field"; name: string }
+  /** Another snippet, inserted here (docs/adr/0016-snippets-inside-snippets.md). */
+  | { type: "snippet"; id: string };
 
 export type Block =
   | { type: "paragraph"; content?: Inline[] }
@@ -116,6 +118,7 @@ export type SkipReason =
   | { kind: "no_text" }
   | { kind: "unsupported_variable"; detail: string }
   | { kind: "invalid_trigger"; detail: string }
+  | { kind: "missing_match"; detail: string }
   | { kind: "invalid"; detail: string }
   | { kind: "unreadable"; detail: string };
 

@@ -23,7 +23,8 @@ use chrono::{Locale, NaiveDateTime, TimeDelta};
 use serde::{Deserialize, Serialize};
 
 use crate::document::{Block, Inline, Marks};
-use crate::snippet::{InsertMode, Snippet, is_valid_date_format};
+use crate::nesting::{self, MAX_DEPTH};
+use crate::snippet::{InsertMode, Snippet, SnippetId, is_valid_date_format};
 
 pub use cf_html::wrap_cf_html;
 
@@ -41,6 +42,9 @@ pub struct RenderContext<'a> {
     pub fields: &'a HashMap<String, String>,
     /// Language of day and month names (`%A`, `%B`, …).
     pub date_language: DateLanguage,
+    /// The snippets that can be included ([`Inline::Snippet`]); usually the
+    /// whole library.
+    pub snippets: &'a [Snippet],
 }
 
 /// Language of day and month names in dates.
@@ -116,6 +120,12 @@ pub enum RenderError {
     /// A field has neither an entered value nor a default.
     #[error("no value for field `{0}`")]
     MissingField(String),
+    /// An included snippet does not exist (any more).
+    #[error("an included snippet no longer exists")]
+    MissingSnippet,
+    /// Snippets include each other in a loop or too deeply.
+    #[error("snippets include each other in a loop or more than {MAX_DEPTH} levels deep")]
+    NestingLoop,
 }
 
 /// Renders a snippet.
@@ -124,14 +134,29 @@ pub enum RenderError {
 ///
 /// Fails if a placeholder cannot be filled in (see [`RenderError`]).
 pub fn render(snippet: &Snippet, ctx: &RenderContext<'_>) -> Result<Rendered, RenderError> {
-    let resolved = resolve(snippet, ctx)?;
+    let resolved = Resolver {
+        ctx,
+        stack: vec![snippet.id],
+    }
+    .blocks(snippet)?;
     let (plain, cursor_from_end) = plain::emit(&resolved);
     Ok(Rendered {
         plain,
         html: html::emit(&resolved),
         rtf: rtf::emit(&resolved),
-        formatted: snippet.content.is_formatted(),
+        formatted: is_formatted(&resolved),
         cursor_from_end,
+    })
+}
+
+/// Lists or marked-up text (from the snippet or the snippets it includes)
+/// need the clipboard's rich formats.
+fn is_formatted(blocks: &[ResolvedBlock]) -> bool {
+    blocks.iter().any(|block| match block {
+        ResolvedBlock::Paragraph(runs) => runs
+            .iter()
+            .any(|run| matches!(run, Run::Text { marks, .. } if !marks.is_plain())),
+        ResolvedBlock::BulletList(_) | ResolvedBlock::OrderedList(_) => true,
     })
 }
 
@@ -151,8 +176,42 @@ enum Run {
     Cursor,
 }
 
-fn resolve(snippet: &Snippet, ctx: &RenderContext<'_>) -> Result<Vec<ResolvedBlock>, RenderError> {
-    let resolve_runs = |inlines: &[Inline]| -> Result<Vec<Run>, RenderError> {
+/// Replaces placeholders by their values, following included snippets.
+struct Resolver<'c, 'a> {
+    ctx: &'c RenderContext<'a>,
+    /// The snippets being resolved, outermost first, to stop loops.
+    stack: Vec<SnippetId>,
+}
+
+impl Resolver<'_, '_> {
+    fn blocks(&mut self, snippet: &Snippet) -> Result<Vec<ResolvedBlock>, RenderError> {
+        let mut blocks = Vec::with_capacity(snippet.content.blocks.len());
+        for block in &snippet.content.blocks {
+            match block {
+                Block::Paragraph { content } => match alone(content) {
+                    // An included snippet alone in its paragraph keeps its
+                    // own paragraphs and lists.
+                    Some(id) => blocks.extend(self.include(id)?),
+                    None => blocks.push(ResolvedBlock::Paragraph(self.runs(snippet, content)?)),
+                },
+                Block::BulletList { items } => blocks.push(ResolvedBlock::BulletList(
+                    items
+                        .iter()
+                        .map(|item| self.runs(snippet, item))
+                        .collect::<Result<_, _>>()?,
+                )),
+                Block::OrderedList { items } => blocks.push(ResolvedBlock::OrderedList(
+                    items
+                        .iter()
+                        .map(|item| self.runs(snippet, item))
+                        .collect::<Result<_, _>>()?,
+                )),
+            }
+        }
+        Ok(blocks)
+    }
+
+    fn runs(&mut self, snippet: &Snippet, inlines: &[Inline]) -> Result<Vec<Run>, RenderError> {
         let mut runs = Vec::with_capacity(inlines.len());
         for inline in inlines {
             match inline {
@@ -162,7 +221,7 @@ fn resolve(snippet: &Snippet, ctx: &RenderContext<'_>) -> Result<Vec<ResolvedBlo
                 Inline::Clipboard => {
                     push_text(
                         &mut runs,
-                        ctx.clipboard.unwrap_or_default(),
+                        self.ctx.clipboard.unwrap_or_default(),
                         &Marks::default(),
                     );
                 }
@@ -170,11 +229,13 @@ fn resolve(snippet: &Snippet, ctx: &RenderContext<'_>) -> Result<Vec<ResolvedBlo
                     format,
                     offset_days,
                 } => {
-                    let text = format_date(ctx.now, format, *offset_days, ctx.date_language)?;
+                    let text =
+                        format_date(self.ctx.now, format, *offset_days, self.ctx.date_language)?;
                     push_text(&mut runs, &text, &Marks::default());
                 }
                 Inline::Field { name } => {
-                    let value = ctx
+                    let value = self
+                        .ctx
                         .fields
                         .get(name)
                         .map(String::as_str)
@@ -188,33 +249,81 @@ fn resolve(snippet: &Snippet, ctx: &RenderContext<'_>) -> Result<Vec<ResolvedBlo
                         .ok_or_else(|| RenderError::MissingField(name.clone()))?;
                     push_text(&mut runs, value, &Marks::default());
                 }
+                Inline::Snippet { id } => {
+                    let included = self.include(*id)?;
+                    flatten_into(&mut runs, included);
+                }
             }
         }
         Ok(runs)
-    };
+    }
 
-    snippet
-        .content
-        .blocks
-        .iter()
-        .map(|block| {
-            Ok(match block {
-                Block::Paragraph { content } => ResolvedBlock::Paragraph(resolve_runs(content)?),
-                Block::BulletList { items } => ResolvedBlock::BulletList(
-                    items
-                        .iter()
-                        .map(|item| resolve_runs(item))
-                        .collect::<Result<_, _>>()?,
-                ),
-                Block::OrderedList { items } => ResolvedBlock::OrderedList(
-                    items
-                        .iter()
-                        .map(|item| resolve_runs(item))
-                        .collect::<Result<_, _>>()?,
-                ),
-            })
-        })
-        .collect()
+    /// Resolves an included snippet. Its cursor position is dropped: only
+    /// the outer snippet decides where the cursor goes.
+    fn include(&mut self, id: SnippetId) -> Result<Vec<ResolvedBlock>, RenderError> {
+        // The outer snippet is level 0; `stack.len()` is the level of `id`.
+        if self.stack.contains(&id) || self.stack.len() > MAX_DEPTH {
+            return Err(RenderError::NestingLoop);
+        }
+        let included = nesting::find(self.ctx.snippets, id).ok_or(RenderError::MissingSnippet)?;
+        self.stack.push(id);
+        let blocks = self.blocks(included);
+        self.stack.pop();
+        let mut blocks = blocks?;
+        for block in &mut blocks {
+            match block {
+                ResolvedBlock::Paragraph(runs) => runs.retain(|run| *run != Run::Cursor),
+                ResolvedBlock::BulletList(items) | ResolvedBlock::OrderedList(items) => {
+                    for item in items {
+                        item.retain(|run| *run != Run::Cursor);
+                    }
+                }
+            }
+        }
+        Ok(blocks)
+    }
+}
+
+/// The id if a paragraph holds nothing but one included snippet.
+fn alone(content: &[Inline]) -> Option<SnippetId> {
+    match content {
+        [Inline::Snippet { id }] => Some(*id),
+        _ => None,
+    }
+}
+
+/// Puts included blocks into running text: paragraphs and list items become
+/// lines; list items keep a `•` or number in front.
+fn flatten_into(runs: &mut Vec<Run>, blocks: Vec<ResolvedBlock>) {
+    let mut first = true;
+    let mut line = |runs: &mut Vec<Run>, prefix: Option<String>, item: Vec<Run>| {
+        if !first {
+            runs.push(Run::LineBreak);
+        }
+        first = false;
+        if let Some(prefix) = prefix {
+            runs.push(Run::Text {
+                text: prefix,
+                marks: Marks::default(),
+            });
+        }
+        runs.extend(item);
+    };
+    for block in blocks {
+        match block {
+            ResolvedBlock::Paragraph(item) => line(runs, None, item),
+            ResolvedBlock::BulletList(items) => {
+                for item in items {
+                    line(runs, Some("• ".to_owned()), item);
+                }
+            }
+            ResolvedBlock::OrderedList(items) => {
+                for (number, item) in (1..).zip(items) {
+                    line(runs, Some(format!("{number}. ")), item);
+                }
+            }
+        }
+    }
 }
 
 /// Appends text, turning embedded newlines (from the clipboard or multi-line
@@ -320,6 +429,7 @@ mod tests {
                 clipboard,
                 fields,
                 date_language: DateLanguage::English,
+                snippets: &[],
             },
         )
         .unwrap()
@@ -377,6 +487,7 @@ mod tests {
                 clipboard: None,
                 fields: &HashMap::new(),
                 date_language: DateLanguage::English,
+                snippets: &[],
             },
         )
         .unwrap_err();
@@ -453,6 +564,7 @@ mod tests {
                 clipboard: None,
                 fields: &HashMap::new(),
                 date_language: DateLanguage::English,
+                snippets: &[],
             },
         )
         .unwrap_err();
@@ -472,10 +584,127 @@ mod tests {
                 clipboard: None,
                 fields: &HashMap::new(),
                 date_language: DateLanguage::English,
+                snippets: &[],
             },
         )
         .unwrap_err();
         assert_eq!(err, RenderError::DateOutOfRange);
+    }
+
+    fn render_in(snippet: &Snippet, library: &[Snippet]) -> Result<Rendered, RenderError> {
+        let fields = HashMap::from([("name".to_owned(), "Anna".to_owned())]);
+        render(
+            snippet,
+            &RenderContext {
+                now: ctx_now(),
+                clipboard: None,
+                fields: &fields,
+                date_language: DateLanguage::English,
+                snippets: library,
+            },
+        )
+    }
+
+    fn include(other: &Snippet) -> Inline {
+        Inline::Snippet { id: other.id }
+    }
+
+    fn bold(text: &str) -> Inline {
+        Inline::Text {
+            text: text.into(),
+            marks: Marks {
+                bold: true,
+                ..Marks::default()
+            },
+        }
+    }
+
+    /// A two-line greeting with its own cursor and a field.
+    fn greeting() -> Snippet {
+        Snippet::new(
+            ":gruss",
+            "Greeting",
+            Document {
+                blocks: vec![
+                    Block::Paragraph {
+                        content: vec![Inline::text("Best regards"), Inline::Cursor],
+                    },
+                    Block::Paragraph {
+                        content: vec![Inline::Field {
+                            name: "name".into(),
+                        }],
+                    },
+                ],
+            },
+        )
+    }
+
+    #[test]
+    fn included_snippets_inside_text_become_lines() {
+        let greeting = greeting();
+        let mail = paragraph(vec![
+            Inline::text("Thanks! "),
+            include(&greeting),
+            Inline::Cursor,
+        ]);
+        let out = render_in(&mail, &[greeting.clone(), mail.clone()]).unwrap();
+        assert_eq!(out.plain, "Thanks! Best regards\nAnna");
+        // Only the outer snippet's cursor (at the end) counts, not the
+        // greeting's (which would be 5 characters from the end).
+        assert_eq!(out.cursor_from_end, Some(0));
+        assert!(!out.formatted);
+    }
+
+    #[test]
+    fn included_snippets_alone_keep_their_blocks() {
+        let list = Snippet::new(
+            ":list",
+            "List",
+            Document {
+                blocks: vec![Block::BulletList {
+                    items: vec![vec![bold("one")], vec![Inline::text("two")]],
+                }],
+            },
+        );
+        let outer = Snippet::new(
+            ":outer",
+            "Outer",
+            Document {
+                blocks: vec![
+                    Block::Paragraph {
+                        content: vec![Inline::text("Agenda:")],
+                    },
+                    Block::Paragraph {
+                        content: vec![include(&list)],
+                    },
+                ],
+            },
+        );
+        let out = render_in(&outer, std::slice::from_ref(&list)).unwrap();
+        assert!(out.formatted, "the included list needs the rich formats");
+        assert!(out.html.contains("<ul"), "{}", out.html);
+        assert!(out.html.contains("<strong>one</strong>"), "{}", out.html);
+
+        // Inside text, list items become lines with bullets.
+        let inline = paragraph(vec![Inline::text("Agenda: "), include(&list)]);
+        let out = render_in(&inline, &[list]).unwrap();
+        assert_eq!(out.plain, "Agenda: • one\n• two");
+    }
+
+    #[test]
+    fn missing_and_looping_includes_are_reported() {
+        let greeting = greeting();
+        let mail = paragraph(vec![include(&greeting)]);
+        assert_eq!(render_in(&mail, &[]), Err(RenderError::MissingSnippet));
+
+        let mut a = paragraph(Vec::new());
+        let mut b = paragraph(vec![include(&a)]);
+        a.content = paragraph(vec![include(&b)]).content;
+        b.content = paragraph(vec![include(&a)]).content;
+        assert_eq!(
+            render_in(&a, &[a.clone(), b.clone()]),
+            Err(RenderError::NestingLoop)
+        );
     }
 
     #[test]
