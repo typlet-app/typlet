@@ -12,6 +12,7 @@
 
 mod commands;
 mod os;
+mod stats;
 mod updates;
 
 use std::process::ExitCode;
@@ -55,6 +56,8 @@ fn main() -> ExitCode {
                 let _ = app.emit("open-settings", ());
             } else if request.open_update {
                 let _ = app.emit("open-update", ());
+            } else if request.open_stats {
+                let _ = app.emit("open-stats", ());
             }
         }))
         .plugin(tauri_plugin_dialog::init())
@@ -104,6 +107,8 @@ fn main() -> ExitCode {
             commands::open_folder,
             commands::start_background,
             commands::open_link,
+            stats::load_stats,
+            stats::reset_stats,
             updates::update_status,
             updates::check_for_update,
             updates::install_update,

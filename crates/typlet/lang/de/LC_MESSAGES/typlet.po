@@ -57,6 +57,18 @@ msgstr "Hilfe"
 msgid "Support Typlet ❤️"
 msgstr "Typlet unterstützen ❤️"
 
+msgid "🎉 {} snippets inserted – see your statistics"
+msgstr "🎉 {} Textbausteine eingefügt – zur Statistik"
+
+msgid "🎉 One hour of typing saved – see your statistics"
+msgstr "🎉 Eine Stunde Tippen gespart – zur Statistik"
+
+msgid "🎉 {} hours of typing saved – see your statistics"
+msgstr "🎉 {} Stunden Tippen gespart – zur Statistik"
+
+msgid "🔥 {} days in a row – see your statistics"
+msgstr "🔥 {} Tage in Folge – zur Statistik"
+
 msgid "Quit Typlet"
 msgstr "Typlet beenden"
 

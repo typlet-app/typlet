@@ -130,6 +130,9 @@ pub struct Settings {
     /// Look for a new version once a day (the editor does this; the
     /// background program never connects to the network).
     pub check_for_updates: bool,
+    /// Count inserted snippets for the statistics (numbers only, never
+    /// text; see [`crate::stats`]).
+    pub statistics: bool,
 }
 
 impl Default for Settings {
@@ -146,6 +149,7 @@ impl Default for Settings {
             library_path: None,
             app_rules: Vec::new(),
             check_for_updates: true,
+            statistics: true,
         }
     }
 }

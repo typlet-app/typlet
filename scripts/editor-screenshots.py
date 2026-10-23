@@ -36,6 +36,7 @@ SHOTS = [
     ("editor-nested.png", f"open={THANKS}", ".chip-snippet"),
     ("editor-settings.png", "settings", None),
     ("editor-update.png", "update", None),
+    ("editor-stats.png", "stats", None),
 ]
 
 

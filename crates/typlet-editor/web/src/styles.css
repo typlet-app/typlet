@@ -857,3 +857,172 @@ button.danger,
 .picker-trigger {
   color: var(--muted);
 }
+
+/* ----- statistics -------------------------------------------------------- */
+
+.info-banner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--hover);
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-large);
+  background: var(--raised);
+}
+
+.kpi-value {
+  font-size: 24px;
+  white-space: nowrap;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(90deg, var(--brand), var(--brand-end));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.kpi-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.heatmap {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+}
+
+.heatmap-week {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.heat {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--hover);
+}
+
+.heat-pad {
+  visibility: hidden;
+}
+
+.heat-1 {
+  background: color-mix(in srgb, var(--accent) 30%, var(--hover));
+}
+
+.heat-2 {
+  background: color-mix(in srgb, var(--accent) 55%, var(--hover));
+}
+
+.heat-3 {
+  background: color-mix(in srgb, var(--accent) 80%, var(--hover));
+}
+
+.heat-4 {
+  background: var(--accent);
+}
+
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.top-list {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto 2fr auto;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.top-list li {
+  display: contents;
+}
+
+.top-list .chip-trigger {
+  justify-self: start;
+}
+
+.top-name {
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.top-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--hover);
+  overflow: hidden;
+}
+
+.top-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand), var(--brand-end));
+}
+
+.top-count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.badges {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.badge-item.is-reached {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--selected);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.badge-icon {
+  font-size: 18px;
+}
+
+.home-stats {
+  max-width: 560px;
+  text-align: center;
+}

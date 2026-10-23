@@ -94,6 +94,10 @@ export function SettingsPage({ settings: initial, libraryPath, version, onSaved,
           <input type="checkbox" checked={settings.paused} onChange={(e) => set({ paused: e.target.checked })} />
           <span>{t("paused")}</span>
         </label>
+        <label className="row switch">
+          <input type="checkbox" checked={settings.statistics} onChange={(e) => set({ statistics: e.target.checked })} />
+          <span>{t("statistics_setting")}</span>
+        </label>
       </section>
 
       <section className="panel">

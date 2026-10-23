@@ -34,6 +34,8 @@ pub struct Paths {
     pub editor_focus_lock: PathBuf,
     /// What the editor found out about new versions (`update.json`).
     pub update_state: PathBuf,
+    /// Usage statistics (`stats.json`): counts only, never text.
+    pub stats: PathBuf,
     /// Created by the editor after installing an update on Linux: the
     /// background program quits so the new version can start. Lives next to
     /// the settings, whose folder the background program watches.
@@ -56,6 +58,7 @@ impl Paths {
             lock_file: data_dir.join("typlet.lock"),
             editor_focus_lock: data_dir.join("editor-focus.lock"),
             update_state: data_dir.join("update.json"),
+            stats: data_dir.join("stats.json"),
             quit_request: config_dir.join("quit-request"),
             config_dir,
             data_dir,

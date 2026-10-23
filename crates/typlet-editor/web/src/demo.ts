@@ -5,7 +5,7 @@
 // VITE_DEMO=1.
 
 import { mockIPC, mockWindows } from "@tauri-apps/api/mocks";
-import type { Block, Inline, LoadedSnippet, Marks, Settings, Snippet } from "./types";
+import type { Block, DayCount, Inline, LoadedSnippet, Marks, Milestone, Settings, Snippet, StatsView } from "./types";
 import { strftime, shiftedToday } from "./strftime";
 
 const german = new URLSearchParams(location.search).get("lang") !== "en";
@@ -141,6 +141,7 @@ const settings: Settings = {
   selection_hotkey: "Ctrl+Alt+S",
   app_rules: [{ app: "game.exe", enabled: false }],
   check_for_updates: true,
+  statistics: true,
 };
 
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -190,6 +191,53 @@ function renderHtml(s: Snippet, depth = 0): { html: string; plain: string } {
   return { html, plain: html.replace(/<[^>]+>/g, " ").trim() };
 }
 
+/** Plausible statistics for the screenshots: busy weekdays, quiet weekends. */
+function sampleStats(): StatsView {
+  const today = new Date();
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const days: DayCount[] = [];
+  for (let ago = 181; ago >= 0; ago--) {
+    const day = new Date(today.getFullYear(), today.getMonth(), today.getDate() - ago);
+    const weekend = day.getDay() === 0 || day.getDay() === 6;
+    const started = ago < 150;
+    // A pseudo-random but fixed pattern; the last ten days form a streak.
+    const base = ((ago * 7919) % 13) % 9;
+    const count = !started ? 0 : ago < 10 ? Math.max(1, base) : weekend ? (ago % 4 === 0 ? 1 : 0) : base;
+    days.push({ date: iso(day), count });
+  }
+  const insertions = days.reduce((sum, d) => sum + d.count, 0);
+  const characters = insertions * 96;
+  const minutes = Math.floor(characters / 200);
+  const streak = 10;
+  const best = 23;
+  const ids = (n: number) => `019a0f3c-5d2e-7a10-8b3c-0a1b2c3d4e${String(n).padStart(2, "0")}`;
+  const top = [3, 1, 6, 4, 5].map((n, i) => {
+    const s = library.find((l) => l.snippet.id === ids(n))?.snippet;
+    return { id: ids(n), trigger: s?.trigger ?? null, label: s?.label ?? null, count: [212, 180, 97, 64, 31][i] ?? 0, last_used: iso(today) };
+  });
+  const reached = (m: Milestone) =>
+    m.kind === "insertions" ? insertions >= m.value : m.kind === "hours_saved" ? minutes >= m.value * 60 : best >= m.value;
+  const milestones: Milestone[] = [
+    ...[10, 50, 100, 500, 1000, 5000, 10000].map((value) => ({ kind: "insertions" as const, value })),
+    ...[1, 5, 10, 50, 100].map((value) => ({ kind: "hours_saved" as const, value })),
+    ...[3, 7, 30, 100, 365].map((value) => ({ kind: "streak" as const, value })),
+  ];
+  return {
+    enabled: true,
+    today: iso(today),
+    since: days.find((d) => d.count > 0)?.date ?? null,
+    insertions,
+    characters_saved: characters,
+    minutes_saved: minutes,
+    streak,
+    best_streak: best,
+    days,
+    top,
+    milestones: milestones.map((milestone) => ({ milestone, reached: reached(milestone) })),
+  };
+}
+
 mockWindows("main");
 mockIPC(
   (cmd, payload) => {
@@ -204,6 +252,7 @@ mockIPC(
           open_snippet: new URLSearchParams(location.search).get("open"),
           open_settings: new URLSearchParams(location.search).has("settings"),
           open_update: new URLSearchParams(location.search).has("update"),
+          open_stats: new URLSearchParams(location.search).has("stats"),
           system_german: german,
           background_running: true,
         };
@@ -233,6 +282,8 @@ mockIPC(
           checked_at: "2026-11-02 10:15",
           can_install: true,
         };
+      case "load_stats":
+        return sampleStats();
       case "plugin:dialog|ask":
         return true;
       default:

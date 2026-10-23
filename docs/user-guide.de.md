@@ -103,7 +103,7 @@ Schreibe wiederkehrende Teile wie deine Signatur oder deine Adresse einmal und f
 
 ### Einstellungen
 
-**Einstellungen** (unten links) enthalten Sprache, Start mit dem Computer, Meldungen, die Tastenkombinationen, den Ordner mit den Textbausteinen (wähle einen synchronisierten Ordner wie OneDrive, um sie auf mehreren Computern zu nutzen) und **Regeln für Programme**: Typlet in einem Programm ausschalten oder ändern, wie es dort Text einfügt. Benutzt ein anderes Programm schon eine deiner Tastenkombinationen, sagt Typlet dir Bescheid; wähle dann hier eine andere.
+**Einstellungen** (unten links) enthalten Sprache, Start mit dem Computer, Meldungen, das Zählen für die Statistik, die Tastenkombinationen, den Ordner mit den Textbausteinen (wähle einen synchronisierten Ordner wie OneDrive, um sie auf mehreren Computern zu nutzen) und **Regeln für Programme**: Typlet in einem Programm ausschalten oder ändern, wie es dort Text einfügt. Benutzt ein anderes Programm schon eine deiner Tastenkombinationen, sagt Typlet dir Bescheid; wähle dann hier eine andere.
 
 ![Einstellungen](images/de/editor-settings.png)
 
@@ -116,6 +116,7 @@ Schreibe wiederkehrende Teile wie deine Signatur oder deine Adresse einmal und f
 | Eintrag | Was er macht |
 |---|---|
 | Update … installieren | Erscheint, wenn eine neue Version da ist; installiert sie |
+| 🎉 … – zur Statistik | Erscheint, wenn du einen Meilenstein erreichst; öffnet deine Statistik |
 | Textbausteine suchen … | Öffnet die Schnellsuche |
 | Neuer Textbaustein … | Legt einen Textbaustein aus getipptem oder eingefügtem Text an |
 | Editor öffnen | Öffnet den Editor |
@@ -149,6 +150,14 @@ Häufige Ursachen:
 
 Wenn du ein Problem meldest, nutze **Bericht kopieren** in der Diagnose und füge ihn in ein [GitHub-Issue](https://github.com/typlet-app/typlet/issues) ein. Der Bericht enthält nie, was du getippt hast.
 
+## Statistik
+
+**📊 Statistik** im Editor (unten links) zeigt, was Typlet für dich tut: wie viele Textbausteine es eingefügt hat, wie viel Tippen dir das erspart hat, deine Serie von Tagen in Folge, eine Übersicht des letzten halben Jahres, deine meistgenutzten Textbausteine und Meilensteine wie *100 Textbausteine eingefügt* oder *10 Stunden Tippen gespart*. Erreichst du einen Meilenstein, erscheint ein 🎉-Eintrag im Menü im Infobereich – dafür unterbricht Typlet nie dein Tippen.
+
+![Statistik](images/de/editor-stats.png)
+
+Die gesparte Zeit ist eine Schätzung mit 200 Zeichen pro Minute, einer durchschnittlichen Tippgeschwindigkeit; was du für einen Textbaustein tippst (Kürzel und Formularantworten), wird abgezogen. Typlet speichert **nur Zahlen** auf deinem Computer, nie was du tippst. Unten auf der Seite kannst du die Statistik zurücksetzen, in den Einstellungen das Zählen ausschalten.
+
 ## Updates
 
 Typlet sucht einmal am Tag nach einer neuen Version. Gibt es eine, zeigt das Menü im Infobereich **Update … installieren**, und eine Meldung fragt einmal, ob du sie gleich installieren möchtest. Das dauert etwa eine Minute; danach startet Typlet neu, und deine Textbausteine und Einstellungen bleiben erhalten. Unter Ubuntu und Debian wirst du eventuell nach deinem Passwort gefragt.
@@ -161,7 +170,7 @@ Selbst nachsehen kannst du in den **Einstellungen** des Editors mit **Jetzt such
 
 Typlet muss sehen, was du tippst, um Kürzel zu erkennen. Es behält nur die letzten paar Zeichen im Speicher, speichert oder protokolliert nie, was du tippst, hat im Hintergrundprogramm keinen Internetzugriff und pausiert in Passwortfeldern.
 
-Online geht Typlet nur für die tägliche Suche nach Updates, und die übernimmt der Editor: Er fragt bei GitHub nach der neuesten Version. Wie bei jeder Anfrage im Internet sieht GitHub dabei deine IP-Adresse. Deine Textbausteine und das, was du tippst, verlassen nie deinen Computer.
+Online geht Typlet nur für die tägliche Suche nach Updates, und die übernimmt der Editor: Er fragt bei GitHub nach der neuesten Version. Wie bei jeder Anfrage im Internet sieht GitHub dabei deine IP-Adresse. Deine Textbausteine und das, was du tippst, verlassen nie deinen Computer. Die Statistik enthält nur Zahlen und bleibt ebenfalls auf deinem Computer.
 
 ## Wo deine Daten liegen
 

@@ -218,8 +218,11 @@ impl Stats {
     /// The most used snippets, most used first (ties: most recent first).
     #[must_use]
     pub fn top(&self, count: usize) -> Vec<(SnippetId, SnippetUse)> {
-        let mut all: Vec<(SnippetId, SnippetUse)> =
-            self.snippets.iter().map(|(id, used)| (*id, *used)).collect();
+        let mut all: Vec<(SnippetId, SnippetUse)> = self
+            .snippets
+            .iter()
+            .map(|(id, used)| (*id, *used))
+            .collect();
         all.sort_by(|a, b| {
             b.1.count
                 .cmp(&a.1.count)

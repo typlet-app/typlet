@@ -177,7 +177,7 @@ flowchart LR
 - The snippet picker only offers snippets that do not lead back to the snippet being edited ([`nesting.ts`](../crates/typlet-editor/web/src/nesting.ts)); deleting a snippet that others include asks first.
 - Trigger problems (empty, spaces, duplicates, triggers that can never fire) are checked live in the interface with the same rules as the core ([`conflicts.ts`](../crates/typlet-editor/web/src/conflicts.ts)).
 - The webview may only load the bundled interface (strict content security policy) and may only use the dialog plugin besides Typlet's own commands ([`capabilities/default.json`](../crates/typlet-editor/capabilities/default.json)).
-- The editor is a single instance: a second start focuses the window and passes `--open <id>`, `--settings` or `--update` (used by the background program's "Edit in the editor" and "Install update").
+- The editor is a single instance: a second start focuses the window and passes `--open <id>`, `--settings`, `--update` or `--stats` (used by the background program's "Edit in the editor", "Install update" and milestone entries).
 
 ### Updates
 
@@ -196,6 +196,10 @@ sequenceDiagram
 ```
 
 The updater ([`updates.rs`](../crates/typlet-editor/src/updates.rs)) uses Tauri's plugin with the public key and feed in [`tauri.conf.json`](../crates/typlet-editor/tauri.conf.json). The window is created in code rather than from the configuration, so `--check-updates` runs without one. Development builds cannot replace themselves and link to the download page.
+
+### Statistics
+
+After every successful insertion the engine reports the snippet id and the characters saved (inserted characters minus the typed trigger and form answers) to the user-interface thread, which adds them to `stats.json` ([`stats.rs`](../crates/typlet-core/src/stats.rs), [ADR 0017](adr/0017-local-statistics.md)). An undo takes the insertion back. The file is read before every change, so the editor's statistics page ([`stats.rs`](../crates/typlet-editor/src/stats.rs)) can reset it by deleting it. New milestones appear as a tray menu entry that opens the statistics (`typlet-editor --stats`); the background program never shows a window for them.
 
 ## Platform backends
 
@@ -230,6 +234,7 @@ Resolved by [`paths.rs`](../crates/typlet-platform/src/paths.rs):
 | Single-instance lock | `%APPDATA%\Typlet\data\typlet.lock` | `~/.local/share/typlet/typlet.lock` |
 | Update state (newest version found) | `%APPDATA%\Typlet\data\update.json` | `~/.local/share/typlet/update.json` |
 | Quit request (written by the editor after a Linux update) | `%APPDATA%\Typlet\config\quit-request` | `~/.config/typlet/quit-request` |
+| Statistics (counts only) | `%APPDATA%\Typlet\data\stats.json` | `~/.local/share/typlet/stats.json` |
 
 The library location can be changed in the settings. Starting Typlet a second time opens the editor (or a notice if it is not installed).
 
@@ -242,7 +247,7 @@ Implemented in [`library.rs`](../crates/typlet-core/src/library.rs). A library i
 | Rule | Where it is enforced |
 |---|---|
 | Keep only as many typed characters as the longest trigger | `Matcher` (core) |
-| Never write keystrokes or snippet text to disk or logs | Code review rule; the engine logs outcomes only; the diagnostics history holds app names and outcomes in memory |
+| Never write keystrokes or snippet text to disk or logs | Code review rule; the engine logs outcomes only; the diagnostics history holds app names and outcomes in memory; the statistics hold counts, dates and snippet ids only ([ADR 0017](adr/0017-local-statistics.md)) |
 | No network access in the background program | No network dependencies in its crates; `cargo-deny` in CI; "Help" opens the browser instead; update checks run in the editor |
 | Updates are genuine | Signed with the project's update key, including the version; the updater rejects anything else ([ADR 0015](adr/0015-automatic-updates.md)); a test checks the configured public key |
 | The editor's webview loads only the bundled interface | Content security policy in [`tauri.conf.json`](../crates/typlet-editor/tauri.conf.json); minimal capabilities |

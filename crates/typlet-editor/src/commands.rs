@@ -38,6 +38,8 @@ pub(crate) struct StartArgs {
     pub(crate) check_updates: bool,
     /// Open the update page (`--update`).
     pub(crate) open_update: bool,
+    /// Open the statistics page (`--stats`).
+    pub(crate) open_stats: bool,
 }
 
 impl StartArgs {
@@ -51,6 +53,7 @@ impl StartArgs {
                 "--autostart" | "--background" => parsed.background_only = true,
                 "--check-updates" => parsed.check_updates = true,
                 "--update" => parsed.open_update = true,
+                "--stats" => parsed.open_stats = true,
                 _ => {}
             }
         }
@@ -61,7 +64,7 @@ impl StartArgs {
 /// Errors are shown to the user as text.
 type CommandResult<T> = Result<T, String>;
 
-fn settings(paths: &Paths) -> Settings {
+pub(crate) fn settings(paths: &Paths) -> Settings {
     Settings::load(&paths.settings_file).unwrap_or_default()
 }
 
@@ -80,6 +83,7 @@ pub(crate) struct AppInfo {
     open_snippet: Option<String>,
     open_settings: bool,
     open_update: bool,
+    open_stats: bool,
     system_german: bool,
     background_running: bool,
 }
@@ -95,6 +99,7 @@ pub(crate) fn app_info(state: State<'_, EditorState>) -> AppInfo {
         open_snippet: state.start.open_snippet.clone(),
         open_settings: state.start.open_settings,
         open_update: state.start.open_update,
+        open_stats: state.start.open_stats,
         system_german: typlet_platform::system_language()
             .is_some_and(|lang| lang.to_lowercase().starts_with("de")),
         background_running: typlet_platform::instance::is_running(&paths.lock_file),
@@ -209,7 +214,7 @@ fn parse_id(id: &str) -> CommandResult<SnippetId> {
 }
 
 /// All snippets of the library, for including one in another.
-fn library_snippets(paths: &Paths) -> Vec<Snippet> {
+pub(crate) fn library_snippets(paths: &Paths) -> Vec<Snippet> {
     library(paths)
         .load()
         .snippets
@@ -487,6 +492,7 @@ mod tests {
         assert!(StartArgs::parse(["--autostart".to_owned()]).background_only);
         assert!(StartArgs::parse(["--check-updates".to_owned()]).check_updates);
         assert!(StartArgs::parse(["--update".to_owned()]).open_update);
+        assert!(StartArgs::parse(["--stats".to_owned()]).open_stats);
     }
 
     #[test]

@@ -24,7 +24,8 @@ A missing file or missing fields mean defaults. A file that cannot be read is re
     { "app": "game.exe", "enabled": false },
     { "app": "crm.exe", "newline": "shift_enter", "restore_delay_ms": 800 }
   ],
-  "check_for_updates": true
+  "check_for_updates": true,
+  "statistics": true
 }
 ```
 
@@ -43,6 +44,7 @@ A missing file or missing fields mean defaults. A file that cannot be read is re
 | `library_path` | string | not set | A different snippet folder, for example a synced folder |
 | `app_rules` | array of [app rules](#app-rules) | `[]` | Behaviour per application |
 | `check_for_updates` | boolean | `true` | Look for a new version once a day. The editor checks; the background program never connects to the network ([ADR 0015](adr/0015-automatic-updates.md)) |
+| `statistics` | boolean | `true` | Count inserted snippets for the statistics in `stats.json`: numbers only, never text ([ADR 0017](adr/0017-local-statistics.md)) |
 
 ## App rules
 

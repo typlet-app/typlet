@@ -84,6 +84,11 @@ pub(crate) enum Notice {
     Diagnostics(Vec<Attempt>),
     /// Another program already uses this shortcut (Windows).
     HotkeyTaken(Hotkey),
+    /// A snippet was inserted, saving `saved` characters of typing (for the
+    /// statistics; never the text itself).
+    Inserted { snippet: SnippetId, saved: u64 },
+    /// The user undid that insertion with Backspace.
+    Undone { snippet: SnippetId, saved: u64 },
 }
 
 /// What happened when a snippet was due to be inserted.
@@ -204,6 +209,8 @@ pub(crate) struct Engine<B, N> {
     /// The registered hotkeys; the platform reports them by index.
     hotkeys: Vec<(Hotkey, HotkeyAction)>,
     last: Option<InsertedText>,
+    /// The snippet and saved characters of `last`, to take back on undo.
+    last_counted: Option<(SnippetId, u64)>,
     pending_form: Option<PendingForm>,
     quiet: bool,
     history: VecDeque<Attempt>,
@@ -253,6 +260,7 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
             matcher: Matcher::default(),
             hotkeys: Vec::new(),
             last: None,
+            last_counted: None,
             pending_form: None,
             quiet: false,
             history: VecDeque::with_capacity(HISTORY),
@@ -348,11 +356,15 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
                 self.rebuild();
             }
             Command::Insert { id, fields } => {
-                self.pending_form = None;
+                // A form's trigger was typed and deleted when the form opened.
+                let typed = self
+                    .pending_form
+                    .take()
+                    .map_or(0, |form| form.trigger.chars().count());
                 self.backend.restore_focus();
                 thread::sleep(self.focus_settle);
                 if let Some(snippet) = self.library.get(id).cloned() {
-                    self.insert_checked(&snippet, &fields, "");
+                    self.insert_checked(&snippet, &fields, "", typed);
                 }
             }
             Command::FormCancelled => {
@@ -394,7 +406,12 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
         {
             let options = inject_options(&self.settings.rule_for(None));
             match self.backend.execute(&actions, &options) {
-                Ok(()) => self.record(None, AttemptResult::Undone),
+                Ok(()) => {
+                    self.record(None, AttemptResult::Undone);
+                    if let Some((snippet, saved)) = self.last_counted.take() {
+                        (self.notify)(Notice::Undone { snippet, saved });
+                    }
+                }
                 Err(error) => self.record(None, AttemptResult::Failed(error.to_string())),
             }
             return;
@@ -418,7 +435,7 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
             return;
         };
         if !self.has_form(&snippet) {
-            self.insert(&snippet, &HashMap::new(), &snippet.trigger, app, &rule);
+            self.insert(&snippet, &HashMap::new(), &snippet.trigger, 0, app, &rule);
         } else {
             self.open_form(&snippet, &snippet.trigger, app, &rule);
         }
@@ -448,7 +465,7 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
                     return;
                 };
                 if !self.has_form(&snippet) {
-                    self.insert(&snippet, &HashMap::new(), "", app, &rule);
+                    self.insert(&snippet, &HashMap::new(), "", 0, app, &rule);
                 } else {
                     self.open_form(&snippet, "", app, &rule);
                 }
@@ -517,20 +534,29 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
         snippet: &Snippet,
         fields: &HashMap<String, String>,
         trigger: &str,
+        typed: usize,
     ) {
         if let Some((app, rule)) = self.target() {
-            self.insert(snippet, fields, trigger, app, &rule);
+            self.insert(snippet, fields, trigger, typed, app, &rule);
         }
     }
 
+    /// Inserts a snippet in place of `trigger`. `typed` counts further
+    /// characters the user typed for it (a form's trigger), for the
+    /// statistics.
     fn insert(
         &mut self,
         snippet: &Snippet,
         fields: &HashMap<String, String>,
         trigger: &str,
+        typed: usize,
         app: Option<String>,
         rule: &EffectiveRule,
     ) {
+        // The user typed the trigger and the answers to the form.
+        let typed = typed
+            + trigger.chars().count()
+            + fields.values().map(|v| v.chars().count()).sum::<usize>();
         let library = Arc::clone(&self.library);
         let clipboard = if nesting::uses_clipboard(snippet, &library.snippets) {
             self.backend.clipboard_text()
@@ -572,12 +598,18 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
                     InsertMethod::Paste => AttemptResult::Pasted,
                 };
                 self.record(app, result);
+                let saved = u64::try_from(inserted.chars.saturating_sub(typed)).unwrap_or(0);
+                (self.notify)(Notice::Inserted {
+                    snippet: snippet.id,
+                    saved,
+                });
                 if trigger.is_empty() {
                     self.matcher.feed(Input::Reset);
                     self.last = None;
                 } else {
                     self.backend.arm_undo(inserted.undoable);
                     self.last = Some(inserted);
+                    self.last_counted = Some((snippet.id, saved));
                 }
             }
             Err(error) => self.fail(app, &error),
@@ -901,6 +933,39 @@ mod tests {
             vec![Action::Type("Call Anna".into())]
         );
         assert_eq!(log.borrow().restored, 1);
+        // 9 characters inserted; the user typed the trigger and "Anna" (7).
+        assert_eq!(
+            notices.borrow().last(),
+            Some(&Notice::Inserted {
+                snippet: id,
+                saved: 2
+            })
+        );
+    }
+
+    #[test]
+    fn insertions_are_counted_and_undos_taken_back() {
+        let snippet = plain(":mfg", "Mit freundlichen Grüßen");
+        let id = snippet.id;
+        let (mut engine, _, notices) = setup(vec![snippet], Settings::default(), Fake::default());
+        type_text(&mut engine, ":mfg");
+        // 23 characters inserted for 4 typed.
+        let counted = Notice::Inserted {
+            snippet: id,
+            saved: 19,
+        };
+        assert_eq!(*notices.borrow(), vec![counted]);
+        engine.handle_event(Event::Backspace { suppressed: false });
+        assert_eq!(
+            notices.borrow().last(),
+            Some(&Notice::Undone {
+                snippet: id,
+                saved: 19
+            })
+        );
+        // Nothing to take back twice.
+        engine.handle_event(Event::Backspace { suppressed: false });
+        assert_eq!(notices.borrow().len(), 2);
     }
 
     #[test]
@@ -948,7 +1013,7 @@ mod tests {
         // The included callback note has a field, so the wrapper's form
         // opens first and asks for it.
         type_text(&mut engine, " :wrap");
-        assert_eq!(*notices.borrow(), vec![Notice::ShowForm(wrapper_id)]);
+        assert_eq!(notices.borrow().last(), Some(&Notice::ShowForm(wrapper_id)));
     }
 
     #[test]
