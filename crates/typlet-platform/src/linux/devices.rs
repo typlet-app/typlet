@@ -92,24 +92,42 @@ fn spawn_reader(
         .name("typlet-input".into())
         .spawn(move || {
             log::info!("reading input device {name}");
+            let mut pressed = HashSet::new();
             'read: loop {
                 let Ok(events) = device.fetch_events() else {
                     break;
                 };
                 for event in events {
-                    if let EventSummary::Key(_, code, value) = event.destructure()
-                        && tx
+                    if let EventSummary::Key(_, code, value) = event.destructure() {
+                        match value {
+                            1 => {
+                                pressed.insert(code.0);
+                            }
+                            0 => {
+                                pressed.remove(&code.0);
+                            }
+                            _ => {}
+                        }
+                        if tx
                             .send(RawKey {
                                 code: code.0,
                                 value,
                             })
                             .is_err()
-                    {
-                        break 'read;
+                        {
+                            break 'read;
+                        }
                     }
                 }
             }
             log::info!("input device {name} went away");
+            // A keyboard unplugged with a key down never reports the release;
+            // otherwise Typlet would wait for that key before every expansion.
+            for code in pressed {
+                if tx.send(RawKey { code, value: 0 }).is_err() {
+                    break;
+                }
+            }
             if let Ok(mut set) = active.lock() {
                 set.remove(&path);
             }

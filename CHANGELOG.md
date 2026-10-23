@@ -64,6 +64,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Linux: characters were missing when the user still held the last keys of the trigger while Typlet typed (`:mfg` gave `Mit reundlichen rüßen`). Typlet now waits until such a key is released.
 - The background program reloaded the snippet library over and over after any program read a snippet file (the file watcher treated reading as a change).
 
 ### Changed
