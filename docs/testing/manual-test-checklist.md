@@ -54,6 +54,7 @@ For every cell check:
 - [ ] Clicking elsewhere in the middle of typing a trigger, then finishing it, does not expand.
 - [ ] Caps Lock on: triggers typed in capitals do not expand (unless a snippet uses capitals).
 - [ ] Holding Shift while finishing a trigger does not select text.
+- [ ] Typing a trigger fast and keeping its last key pressed a moment still inserts the complete text (`:mfg` → `Mit freundlichen Grüßen`, nothing missing).
 - [ ] Typing fast in a long text never expands inside normal words when triggers start with `:`.
 
 ## 4. Quick search and forms

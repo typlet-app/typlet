@@ -180,7 +180,7 @@ flowchart LR
 |---|---|---|---|
 | Keyboard input | Low-level keyboard and mouse hooks on a dedicated thread; injected events ignored | evdev (`/dev/input`), user in the `input` group; Typlet's own virtual keyboard ignored; devices rescanned every 3 s | Event tap (Accessibility permission) |
 | Characters from keys | `ToUnicodeEx` with the foreground window's layout and the "keep keyboard state" flag, so dead keys (`^`, `´`) still work in the app | xkbcommon with the detected layout (GNOME, KDE, `/etc/default/keyboard`, environment) and compose rules | System layout APIs |
-| Typing | Unicode `SendInput` in small batches | uinput virtual keyboard; characters missing from the layout are pasted | Event posting |
+| Typing | Unicode `SendInput` in small batches | uinput virtual keyboard; characters missing from the layout are pasted. Before pressing a key, Typlet waits until the user has let go of it, because the compositor ignores a press of a key that another keyboard still holds ([`held.rs`](../crates/typlet-platform/src/linux/held.rs)) | Event posting |
 | Clipboard | Win32 clipboard with `CF_UNICODETEXT`, `HTML Format`, `Rich Text Format` | X11 clipboard (XWayland), which GNOME and KDE bridge to Wayland apps | NSPasteboard |
 | Focused app | Executable of the foreground window; password fields via UI Automation (MTA, 300 ms timeouts) | Not available on GNOME Wayland; all apps use the default rule | Accessibility API |
 | Global hotkeys | Detected and swallowed in the keyboard hook ([ADR 0009](adr/0009-hotkeys-in-the-input-layer.md)) | Detected in the evdev stream; the app also receives the keys | Event tap |

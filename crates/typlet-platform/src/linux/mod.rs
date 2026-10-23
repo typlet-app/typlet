@@ -14,11 +14,12 @@
 
 mod clipboard;
 mod devices;
+mod held;
 mod inject;
 mod keymap;
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU8};
+use std::sync::atomic::AtomicBool;
 use std::thread;
 use std::time::Duration;
 
@@ -27,6 +28,7 @@ use typlet_core::{Action, ClipboardContent, Hotkey};
 
 use crate::{Controls, Event, FocusedApp, InjectOptions, PlatformError, Shared, Status};
 use clipboard::Clipboard;
+use held::HeldKeys;
 use inject::Injector;
 use keymap::{CharMap, Layout};
 
@@ -47,7 +49,7 @@ pub(crate) const SETUP_COMMANDS: Option<&str> = Some(
 pub(crate) struct Backend {
     controls: Controls,
     layout: Layout,
-    modifiers_held: Arc<AtomicU8>,
+    held_keys: Arc<HeldKeys>,
     caps_lock: Arc<AtomicBool>,
     injector: Option<Injector>,
     clipboard: Clipboard,
@@ -59,11 +61,11 @@ impl Backend {
         let char_map = Arc::new(CharMap::build(&layout).ok_or_else(|| {
             PlatformError::Other(format!("cannot load keyboard layout `{layout}`"))
         })?);
-        let modifiers_held = Arc::new(AtomicU8::new(0));
+        let held_keys = Arc::new(HeldKeys::default());
         let caps_lock = Arc::new(AtomicBool::new(false));
         let injector = Injector::new(
             Arc::clone(&char_map),
-            Arc::clone(&modifiers_held),
+            Arc::clone(&held_keys),
             Arc::clone(&caps_lock),
         )
         .map_err(|e| {
@@ -73,7 +75,7 @@ impl Backend {
         Ok(Self {
             controls: Controls::default(),
             layout,
-            modifiers_held,
+            held_keys,
             caps_lock,
             injector: Some(injector),
             clipboard: Clipboard::default(),
@@ -93,7 +95,7 @@ impl Backend {
         // xkbcommon objects are not `Send`, so the translator is built on the
         // thread that uses it. The layout already compiled in `new()`.
         let layout = self.layout.clone();
-        let held = Arc::clone(&self.modifiers_held);
+        let held = Arc::clone(&self.held_keys);
         let caps = Arc::clone(&self.caps_lock);
         thread::Builder::new()
             .name("typlet-translate".into())
@@ -124,7 +126,7 @@ impl Backend {
             .injector
             .as_mut()
             .ok_or_else(|| PlatformError::Permission(PERMISSION_HELP.into()))?;
-        injector.wait_for_modifier_release(Duration::from_secs(1));
+        injector.begin();
 
         for action in actions {
             match action {
@@ -159,7 +161,7 @@ impl Backend {
 
     pub(crate) fn copy_selection(&mut self) -> Option<String> {
         let injector = self.injector.as_mut()?;
-        injector.wait_for_modifier_release(Duration::from_secs(1));
+        injector.begin();
         let saved = self.clipboard.text();
         self.clipboard.clear();
         injector.copy_shortcut().ok()?;

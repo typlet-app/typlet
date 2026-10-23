@@ -3,7 +3,7 @@
 
 use std::io;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -12,22 +12,32 @@ use evdev::{AttributeSet, EventType, InputEvent, KeyCode};
 use typlet_core::NewlineMode;
 
 use super::devices::VIRTUAL_DEVICE_NAME;
-use super::keymap::CharMap;
+use super::held::HeldKeys;
+use super::keymap::{CharMap, MODIFIER_CODES};
 
 /// Pause after every key event so compositors and apps keep up.
 const KEY_DELAY: Duration = Duration::from_millis(2);
 
+/// How long one injection waits in total for the user to let go of keys.
+const RELEASE_TIMEOUT: Duration = Duration::from_secs(1);
+
+/// Pause after the user let go of a key, so the compositor has processed the
+/// release before Typlet's virtual keyboard presses anything.
+const SETTLE_DELAY: Duration = Duration::from_millis(10);
+
 pub(super) struct Injector {
     device: VirtualDevice,
     chars: Arc<CharMap>,
-    held_count: Arc<AtomicU8>,
+    held: Arc<HeldKeys>,
     caps_lock: Arc<AtomicBool>,
+    /// End of the waiting time of the current injection ([`Self::begin`]).
+    deadline: Instant,
 }
 
 impl Injector {
     pub(super) fn new(
         chars: Arc<CharMap>,
-        held_count: Arc<AtomicU8>,
+        held: Arc<HeldKeys>,
         caps_lock: Arc<AtomicBool>,
     ) -> io::Result<Self> {
         let mut keys = AttributeSet::<KeyCode>::new();
@@ -43,21 +53,42 @@ impl Injector {
         Ok(Self {
             device,
             chars,
-            held_count,
+            held,
             caps_lock,
+            deadline: Instant::now(),
         })
     }
 
-    /// Waits until the user has released all modifier keys, so they do not
-    /// combine with simulated keys (Shift + Left would select text).
-    pub(super) fn wait_for_modifier_release(&self, timeout: Duration) {
-        let start = Instant::now();
-        while self.held_count.load(Ordering::Acquire) > 0 && start.elapsed() < timeout {
-            thread::sleep(Duration::from_millis(10));
+    /// Starts an injection: waits until the user has released all modifier
+    /// keys, so they do not combine with simulated keys (Shift + Left would
+    /// select text).
+    pub(super) fn begin(&mut self) {
+        self.deadline = Instant::now() + RELEASE_TIMEOUT;
+        if !self.wait_released(&MODIFIER_CODES.map(|code| code.0)) {
+            log::debug!("modifier keys still held, typing anyway");
         }
     }
 
+    /// Waits (within the injection's waiting time) until the user has let go
+    /// of `codes`. Returns `false` if one is still held.
+    fn wait_released(&self, codes: &[u16]) -> bool {
+        if !codes.iter().any(|code| self.held.is_held(*code)) {
+            return true;
+        }
+        let remaining = self.deadline.saturating_duration_since(Instant::now());
+        let released = self.held.wait_released(codes, remaining);
+        if released {
+            thread::sleep(SETTLE_DELAY);
+        }
+        released
+    }
+
     fn key(&mut self, code: KeyCode, down: bool) -> io::Result<()> {
+        if down {
+            // The compositor ignores a press of a key the user still holds
+            // (see `held`), so wait for the user to let go of it first.
+            self.wait_released(&[code.0]);
+        }
         self.device
             .emit(&[InputEvent::new(EventType::KEY.0, code.0, i32::from(down))])?;
         thread::sleep(KEY_DELAY);
