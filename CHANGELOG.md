@@ -10,6 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Installers (milestone M5): Windows NSIS installer per user without admin rights, Debian package with udev rule and `input` group set-up, AppImage; built by the new release workflow from version tags as draft releases with checksums, with an install/uninstall smoke test on every build; code-signing step prepared for SignPath (ADR 0013, docs/releasing.md).
 - The editor accepts `--autostart`/`--background` to start only the background program (used by the AppImage at login).
 - User guide: installing; README: download section.
+- Windows: a message when another program already uses one of Typlet's shortcuts, with a button to the settings.
 - Day and month names in dates follow the interface language (`Freitag, 23. Oktober 2026`); formats with a time-zone code such as `%z` no longer fail.
 - Editor `typlet-editor` (milestone M4), built with Tauri, React and Tiptap:
   - snippet list with search and categories,
@@ -69,6 +70,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Windows: Typlet reads the keyboard with Raw Input instead of a low-level keyboard hook and registers its shortcuts with Windows (`RegisterHotKey`). Raw input only reads, so the Backspace that undoes an expansion now reaches the app first, as on Linux (ADR 0014).
 - ADR 0003 is partly superseded by ADR 0010: the set-up assistant lives in the background program.
 - `cargo-deny` treats "unmaintained" notices as errors only for direct dependencies.
 

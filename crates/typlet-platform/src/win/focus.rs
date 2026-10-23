@@ -84,7 +84,7 @@ impl Focus {
         // Opened from the tray, the taskbar is in front; use the window the
         // user last typed in instead.
         let window = if window.0.is_null() || is_own_window(window) || is_shell_window(window) {
-            HWND(super::hook::last_external_window() as *mut core::ffi::c_void)
+            HWND(super::input::last_external_window() as *mut core::ffi::c_void)
         } else {
             window
         };

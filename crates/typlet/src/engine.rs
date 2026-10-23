@@ -81,6 +81,8 @@ pub(crate) enum Notice {
     InsertFailed(String),
     /// The diagnostics history, newest first.
     Diagnostics(Vec<Attempt>),
+    /// Another program already uses this shortcut (Windows).
+    HotkeyTaken(Hotkey),
 }
 
 /// What happened when a snippet was due to be inserted.
@@ -198,7 +200,8 @@ pub(crate) struct Engine<B, N> {
     library: Arc<Snapshot>,
     settings: Arc<Settings>,
     matcher: Matcher,
-    hotkeys: Vec<HotkeyAction>,
+    /// The registered hotkeys; the platform reports them by index.
+    hotkeys: Vec<(Hotkey, HotkeyAction)>,
     last: Option<InsertedText>,
     pending_form: Option<PendingForm>,
     quiet: bool,
@@ -280,14 +283,12 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
         self.matcher = Matcher::new(self.library.snippets.iter());
         self.last = None;
 
-        let mut keys = Vec::new();
-        let mut actions = Vec::new();
+        let mut hotkeys: Vec<(Hotkey, HotkeyAction)> = Vec::new();
         let mut add = |hotkey: Hotkey, action: HotkeyAction| {
-            if keys.contains(&hotkey) {
+            if hotkeys.iter().any(|(key, _)| *key == hotkey) {
                 log::warn!("hotkey {hotkey} is assigned twice; only the first one works");
             } else {
-                keys.push(hotkey);
-                actions.push(action);
+                hotkeys.push((hotkey, action));
             }
         };
         if let Some(hotkey) = self.settings.search_hotkey {
@@ -301,8 +302,9 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
                 add(hotkey, HotkeyAction::Snippet(snippet.id));
             }
         }
+        let keys: Vec<Hotkey> = hotkeys.iter().map(|(key, _)| *key).collect();
         self.backend.set_hotkeys(&keys);
-        self.hotkeys = actions;
+        self.hotkeys = hotkeys;
     }
 
     pub(crate) fn handle_event(&mut self, event: Event) {
@@ -322,8 +324,13 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
                 self.backend.arm_undo(false);
             }
             Event::Hotkey(index) => {
-                if let Some(&action) = self.hotkeys.get(index) {
+                if let Some(&(_, action)) = self.hotkeys.get(index) {
                     self.hotkey(action);
+                }
+            }
+            Event::HotkeyUnavailable(index) => {
+                if let Some(&(hotkey, _)) = self.hotkeys.get(index) {
+                    (self.notify)(Notice::HotkeyTaken(hotkey));
                 }
             }
         }
@@ -908,6 +915,17 @@ mod tests {
         assert_eq!(
             log.borrow().actions,
             vec![vec![Action::Type("Hello".into())]]
+        );
+    }
+
+    #[test]
+    fn reports_shortcuts_another_program_uses() {
+        let (mut engine, _, notices) = setup(Vec::new(), Settings::default(), Fake::default());
+        engine.handle_event(Event::HotkeyUnavailable(1));
+        engine.handle_event(Event::HotkeyUnavailable(7));
+        assert_eq!(
+            *notices.borrow(),
+            vec![Notice::HotkeyTaken(Hotkey::default_selection())]
         );
     }
 

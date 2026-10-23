@@ -4,17 +4,17 @@ The operating-system layer of [Typlet](../../README.md). Every backend offers th
 
 | Capability | Windows | Linux |
 |---|---|---|
-| Reading keys | Low-level keyboard and mouse hooks | evdev (`/dev/input`), user in the `input` group |
+| Reading keys | Raw Input (reads only; modifier state tracked in `raw_keys`) | evdev (`/dev/input`), user in the `input` group |
 | Keys → characters | `ToUnicodeEx` without touching dead-key state | xkbcommon with the user's layout and compose rules |
 | Typing | `SendInput` with Unicode key events | uinput virtual keyboard |
 | Clipboard | Text, `HTML Format`, `Rich Text Format`; all formats restored; hidden from clipboard history | Text and HTML via the X11 clipboard (bridged to Wayland) |
 | Focused app | Executable name; password fields via UI Automation | Not available on GNOME Wayland |
-| Hotkeys | Detected and suppressed in the keyboard hook | Detected in the evdev stream |
+| Hotkeys | `RegisterHotKey`; shortcuts used by another program are reported | Detected in the evdev stream |
 | Autostart | `HKCU\…\Run` | `~/.config/autostart/typlet.desktop` |
 
 Typed characters are passed to the engine and forgotten. They are never logged, stored or transmitted.
 
-Platform-independent helpers (`paths`, `instance`, `autostart`) and the virtual-key mapping (`vk`, unit-tested on every OS) live next to the backends. See [docs/architecture.md](../../docs/architecture.md#platform-backends) for the design.
+Platform-independent helpers (`paths`, `instance`, `autostart`) the virtual-key mapping (`vk`) and the raw keyboard state (`raw_keys`), both unit-tested on every OS, live next to the backends. See [docs/architecture.md](../../docs/architecture.md#platform-backends) for the design.
 
 ## Running the tests
 

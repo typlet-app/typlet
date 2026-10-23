@@ -383,5 +383,14 @@ msgstr "Einrichtungsassistent öffnen"
 msgid "Open diagnostics"
 msgstr "Diagnose öffnen"
 
+msgid "This shortcut is already in use"
+msgstr "Diese Tastenkombination ist schon vergeben"
+
+msgid "Another program already uses {}, so Typlet cannot. Choose a different shortcut in the settings."
+msgstr "Ein anderes Programm benutzt bereits {}, deshalb kann Typlet sie nicht verwenden. Wähle in den Einstellungen eine andere Tastenkombination."
+
+msgid "Open settings"
+msgstr "Einstellungen öffnen"
+
 msgid "OK"
 msgstr "OK"

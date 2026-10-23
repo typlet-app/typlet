@@ -23,6 +23,8 @@ mod linux;
 use linux as imp;
 
 #[cfg(any(windows, test))]
+mod raw_keys;
+#[cfg(any(windows, test))]
 mod vk;
 #[cfg(windows)]
 mod win;
@@ -35,7 +37,6 @@ mod unsupported;
 use unsupported as imp;
 
 use std::io;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
@@ -59,6 +60,9 @@ pub enum Event {
     /// A registered hotkey was pressed; the value is its index in the list
     /// passed to [`Platform::set_hotkeys`].
     Hotkey(usize),
+    /// The hotkey with this index cannot be used because another program
+    /// has already claimed it (Windows).
+    HotkeyUnavailable(usize),
 }
 
 /// The application that currently has the keyboard focus.
@@ -145,17 +149,17 @@ pub trait Backend {
     /// shortcut), returns it as text and restores the previous clipboard.
     fn copy_selection(&mut self) -> Option<String>;
 
-    /// After an expansion, the next Backspace may be suppressed so that the
-    /// undo can restore the trigger exactly (on platforms that support it).
+    /// After an expansion, the next Backspace may be withheld from the app
+    /// so that the undo can restore the trigger exactly. Windows and Linux
+    /// cannot withhold keys (they only read them), so they ignore this and
+    /// always report `suppressed: false`.
     fn arm_undo(&self, armed: bool);
 }
 
-/// Hotkeys and undo flag, owned by the backend and shared with the
-/// listening threads.
+/// Hotkeys, owned by the backend and shared with the listening threads.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Controls {
     pub(crate) hotkeys: Arc<RwLock<Vec<Hotkey>>>,
-    pub(crate) undo_armed: Arc<AtomicBool>,
 }
 
 impl Controls {
@@ -164,10 +168,6 @@ impl Controls {
             *current = hotkeys.to_vec();
         }
     }
-
-    pub(crate) fn arm_undo(&self, armed: bool) {
-        self.undo_armed.store(armed, Ordering::Release);
-    }
 }
 
 /// State shared between the engine and the listening threads.
@@ -175,8 +175,6 @@ impl Controls {
 pub(crate) struct Shared {
     pub(crate) sink: Sender<Event>,
     pub(crate) hotkeys: Arc<RwLock<Vec<Hotkey>>>,
-    #[cfg_attr(not(windows), allow(dead_code))] // only Windows can suppress keys
-    pub(crate) undo_armed: Arc<AtomicBool>,
 }
 
 impl Shared {
@@ -184,7 +182,6 @@ impl Shared {
         Arc::new(Self {
             sink,
             hotkeys: Arc::clone(&controls.hotkeys),
-            undo_armed: Arc::clone(&controls.undo_armed),
         })
     }
 
@@ -199,9 +196,13 @@ impl Shared {
         find_hotkey(&hotkeys, mods, key)
     }
 
-    #[cfg_attr(not(windows), allow(dead_code))] // only Windows can suppress keys
-    pub(crate) fn take_undo_armed(&self) -> bool {
-        self.undo_armed.swap(false, Ordering::AcqRel)
+    /// A copy of the registered hotkeys.
+    #[cfg_attr(not(windows), allow(dead_code))] // Windows registers them with the system
+    pub(crate) fn hotkeys(&self) -> Vec<Hotkey> {
+        self.hotkeys
+            .read()
+            .map(|hotkeys| hotkeys.clone())
+            .unwrap_or_default()
     }
 }
 
