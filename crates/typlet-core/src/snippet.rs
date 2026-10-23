@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::document::{Document, Inline};
+use crate::hotkey::Hotkey;
 
 /// Current version of the snippet file format.
 pub const FORMAT_VERSION: u32 = 1;
@@ -108,6 +109,9 @@ pub struct Snippet {
     /// Per-snippet override of the insertion method.
     #[serde(default, skip_serializing_if = "is_auto")]
     pub insert_mode: InsertMode,
+    /// Optional global keyboard shortcut that inserts the snippet directly.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hotkey: Option<Hotkey>,
 }
 
 fn default_version() -> u32 {
@@ -171,6 +175,7 @@ impl Snippet {
             fields: Vec::new(),
             enabled: true,
             insert_mode: InsertMode::Auto,
+            hotkey: None,
         }
     }
 

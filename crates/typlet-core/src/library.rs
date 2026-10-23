@@ -11,9 +11,10 @@
 //! is reported per file and the remaining snippets stay usable.
 
 use std::fs;
-use std::io::{self, Write as _};
+use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::fsutil::write_atomic;
 use crate::snippet::{Snippet, ValidationError};
 
 /// File extension of snippet files.
@@ -157,12 +158,6 @@ impl Library {
             source,
         })?;
 
-        let io_err = |source| LibraryError::Io {
-            path: path.clone(),
-            source,
-        };
-        fs::create_dir_all(&dir).map_err(io_err)?;
-
         let mut json =
             serde_json::to_string_pretty(snippet).map_err(|source| LibraryError::Parse {
                 path: path.clone(),
@@ -170,15 +165,46 @@ impl Library {
             })?;
         json.push('\n');
 
-        let mut temp = tempfile::Builder::new()
-            .prefix(".typlet-")
-            .suffix(".tmp")
-            .tempfile_in(&dir)
-            .map_err(io_err)?;
-        temp.write_all(json.as_bytes()).map_err(io_err)?;
-        temp.as_file().sync_all().map_err(io_err)?;
-        temp.persist(&path).map_err(|e| io_err(e.error))?;
+        write_atomic(&path, json.as_bytes()).map_err(|source| LibraryError::Io {
+            path: path.clone(),
+            source,
+        })?;
         Ok(path)
+    }
+
+    /// Saves a snippet and, if it was previously stored at a different path
+    /// (because its category changed), removes the old file.
+    ///
+    /// # Errors
+    ///
+    /// Fails if saving fails. The old file is only removed after the new one
+    /// was written successfully.
+    pub fn save_replacing(
+        &self,
+        snippet: &Snippet,
+        category: &[String],
+        previous_path: Option<&Path>,
+    ) -> Result<PathBuf, LibraryError> {
+        let path = self.save(snippet, category)?;
+        if let Some(previous) = previous_path
+            && previous != path
+            && previous.exists()
+        {
+            fs::remove_file(previous).map_err(|source| LibraryError::Io {
+                path: previous.to_path_buf(),
+                source,
+            })?;
+        }
+        Ok(path)
+    }
+
+    /// Finds the stored location of a snippet by id.
+    #[must_use]
+    pub fn find(&self, id: crate::snippet::SnippetId) -> Option<LoadedSnippet> {
+        self.load()
+            .snippets
+            .into_iter()
+            .find(|loaded| loaded.snippet.id == id)
     }
 
     /// Deletes a snippet file.

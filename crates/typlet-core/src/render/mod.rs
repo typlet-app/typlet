@@ -219,7 +219,11 @@ fn push_text(runs: &mut Vec<Run>, text: &str, marks: &Marks) {
     }
 }
 
-fn format_date(now: NaiveDateTime, format: &str, offset_days: i64) -> Result<String, RenderError> {
+pub(crate) fn format_date(
+    now: NaiveDateTime,
+    format: &str,
+    offset_days: i64,
+) -> Result<String, RenderError> {
     if !is_valid_date_format(format) {
         return Err(RenderError::InvalidDateFormat(format.to_owned()));
     }
