@@ -10,6 +10,7 @@
 //! history records which app was involved and what happened, never the text.
 
 use std::collections::{HashMap, VecDeque};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -132,12 +133,13 @@ struct PendingForm {
 pub(crate) fn spawn(
     settings: Arc<Settings>,
     library: Arc<Snapshot>,
+    editor_lock: PathBuf,
     notify: impl Fn(Notice) + Send + 'static,
 ) -> std::io::Result<Sender<Command>> {
     let (tx, rx) = crossbeam_channel::unbounded();
     thread::Builder::new()
         .name("typlet-engine".into())
-        .spawn(move || run(&rx, settings, library, notify))?;
+        .spawn(move || run(&rx, settings, library, &editor_lock, notify))?;
     Ok(tx)
 }
 
@@ -145,6 +147,7 @@ fn run(
     commands: &Receiver<Command>,
     mut settings: Arc<Settings>,
     mut library: Arc<Snapshot>,
+    editor_lock: &Path,
     notify: impl Fn(Notice),
 ) {
     let (event_tx, event_rx) = crossbeam_channel::unbounded();
@@ -154,6 +157,7 @@ fn run(
                 log::info!("keyboard access started");
                 notify(Notice::Started);
                 let mut engine = Engine::new(platform, notify, library, settings, now);
+                engine.editor_lock = Some(editor_lock.to_path_buf());
                 engine.run(commands, &event_rx);
                 return;
             }
@@ -201,6 +205,8 @@ pub(crate) struct Engine<B, N> {
     history: VecDeque<Attempt>,
     clock: fn() -> NaiveDateTime,
     focus_settle: Duration,
+    /// Lock file the editor holds while it has the focus.
+    editor_lock: Option<PathBuf>,
 }
 
 /// Platform features the engine needs beyond [`Backend`].
@@ -248,6 +254,7 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
             history: VecDeque::with_capacity(HISTORY),
             clock,
             focus_settle: FOCUS_SETTLE,
+            editor_lock: None,
         };
         engine.rebuild();
         engine
@@ -444,6 +451,15 @@ impl<B: EngineBackend, N: FnMut(Notice)> Engine<B, N> {
     /// Checks whether Typlet may insert into the focused app and returns the
     /// app and its rule. Records why not otherwise.
     fn target(&mut self) -> Option<(Option<String>, EffectiveRule)> {
+        // Typing a trigger into the editor (for example as a new snippet's
+        // trigger) must not expand it.
+        if self
+            .editor_lock
+            .as_deref()
+            .is_some_and(typlet_platform::instance::is_running)
+        {
+            return None;
+        }
         let focused = self.backend.focused_app();
         if focused.password_field {
             self.record(focused.app, AttemptResult::SkippedPassword);
@@ -971,6 +987,24 @@ mod tests {
         type_text(&mut engine, ":hi");
         assert!(log.borrow().actions.is_empty());
         engine.handle_command(Command::Quiet(false));
+        type_text(&mut engine, ":hi");
+        assert_eq!(log.borrow().actions.len(), 1);
+    }
+
+    #[test]
+    fn nothing_expands_while_the_editor_has_the_focus() {
+        let dir = tempfile::tempdir().unwrap();
+        let lock = dir.path().join("editor-focus.lock");
+        let (mut engine, log, _) = setup(
+            vec![plain(":hi", "Hello")],
+            Settings::default(),
+            Fake::default(),
+        );
+        engine.editor_lock = Some(lock.clone());
+        let guard = typlet_platform::instance::acquire(&lock).unwrap();
+        type_text(&mut engine, ":hi");
+        assert!(log.borrow().actions.is_empty());
+        drop(guard);
         type_text(&mut engine, ":hi");
         assert_eq!(log.borrow().actions.len(), 1);
     }
