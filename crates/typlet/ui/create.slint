@@ -1,0 +1,209 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Quick creation of a plain-text snippet, for example from selected text.
+
+import { LineEdit, TextEdit, Button } from "std-widgets.slint";
+import { Theme, TriggerChip } from "theme.slint";
+
+export enum TriggerProblem { none, empty, spaces, too-long, taken }
+
+export component CreateWindow inherits Window {
+    in-out property <string> text;
+    in-out property <string> trigger;
+    in-out property <string> label;
+    in property <TriggerProblem> problem;
+    in property <bool> saved;
+    in property <string> error;
+
+    callback trigger-edited(trigger: string);
+    callback save();
+    callback open-editor();
+    callback dismiss();
+
+    out property <bool> can-save: root.problem == TriggerProblem.none && root.text != "";
+
+    title: @tr("Typlet – new snippet");
+    icon: @image-url("images/icon.png");
+    preferred-width: 480px;
+    min-width: 400px;
+    preferred-height: 470px;
+    always-on-top: true;
+    background: Theme.surface;
+
+    FocusScope {
+        capture-key-pressed(event) => {
+            if event.text == Key.Escape {
+                root.dismiss();
+                return accept;
+            }
+            reject
+        }
+
+        if !root.saved: VerticalLayout {
+            padding: Theme.padding-large;
+            spacing: Theme.padding;
+
+            Text {
+                text: @tr("New snippet");
+                color: Theme.text;
+                font-size: Theme.font-title;
+                font-weight: 600;
+            }
+
+            VerticalLayout {
+                spacing: 6px;
+                vertical-stretch: 1;
+                Text {
+                    text: @tr("Text");
+                    color: Theme.text;
+                    font-weight: 600;
+                }
+
+                TextEdit {
+                    text <=> root.text;
+                    wrap: word-wrap;
+                    min-height: 96px;
+                    vertical-stretch: 1;
+                    placeholder-text: @tr("The text Typlet should insert");
+                }
+            }
+
+            VerticalLayout {
+                spacing: 6px;
+                Text {
+                    text: @tr("Trigger");
+                    color: Theme.text;
+                    font-weight: 600;
+                }
+
+                LineEdit {
+                    text <=> root.trigger;
+                    init => {
+                        self.focus();
+                    }
+                    placeholder-text: @tr("for example :hello");
+                    font-family: "monospace";
+                    edited(value) => {
+                        root.trigger-edited(value);
+                    }
+                    accepted => {
+                        if root.can-save {
+                            root.save();
+                        }
+                    }
+                }
+
+                Text {
+                    text: root.problem == TriggerProblem.empty ? @tr("Choose what you will type, for example :hello.")
+                        : root.problem == TriggerProblem.spaces ? @tr("A trigger cannot contain spaces.")
+                        : root.problem == TriggerProblem.too-long ? @tr("A trigger can have at most 64 characters.")
+                        : root.problem == TriggerProblem.taken ? @tr("Another snippet already uses this trigger.")
+                        : @tr("Tip: start triggers with a character like : so they do not fire inside normal words.");
+                    color: root.problem == TriggerProblem.none ? Theme.muted : Theme.error;
+                    font-size: Theme.font-small;
+                    wrap: word-wrap;
+                }
+            }
+
+            VerticalLayout {
+                spacing: 6px;
+                Text {
+                    text: @tr("Name (optional)");
+                    color: Theme.text;
+                    font-weight: 600;
+                }
+
+                LineEdit {
+                    text <=> root.label;
+                    placeholder-text: @tr("Shown in the search");
+                }
+            }
+
+            if root.error != "": Text {
+                text: @tr("The snippet could not be saved: {}", root.error);
+                color: Theme.error;
+                font-size: Theme.font-small;
+                wrap: word-wrap;
+            }
+
+            HorizontalLayout {
+                spacing: Theme.gap;
+                alignment: end;
+                Button {
+                    text: @tr("Cancel");
+                    clicked => {
+                        root.dismiss();
+                    }
+                }
+
+                Button {
+                    text: @tr("Save");
+                    primary: true;
+                    enabled: root.can-save;
+                    clicked => {
+                        root.save();
+                    }
+                }
+            }
+        }
+
+        if root.saved: VerticalLayout {
+            padding: Theme.padding-large;
+            spacing: Theme.padding;
+            alignment: center;
+
+            Text {
+                text: "✓";
+                color: Theme.success;
+                font-size: 48px;
+                horizontal-alignment: center;
+            }
+
+            Text {
+                text: @tr("Saved!");
+                color: Theme.text;
+                font-size: Theme.font-title;
+                font-weight: 600;
+                horizontal-alignment: center;
+            }
+
+            HorizontalLayout {
+                alignment: center;
+                spacing: Theme.gap;
+                Text {
+                    text: @tr("Type");
+                    color: Theme.text;
+                    vertical-alignment: center;
+                }
+
+                TriggerChip {
+                    text: root.trigger;
+                }
+
+                Text {
+                    text: @tr("anywhere to insert it.");
+                    color: Theme.text;
+                    vertical-alignment: center;
+                }
+            }
+
+            HorizontalLayout {
+                alignment: center;
+                spacing: Theme.gap;
+                Button {
+                    text: @tr("Edit in the editor");
+                    clicked => {
+                        root.open-editor();
+                    }
+                }
+
+                Button {
+                    text: @tr("Done");
+                    primary: true;
+                    clicked => {
+                        root.dismiss();
+                    }
+                }
+            }
+        }
+    }
+}

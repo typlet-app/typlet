@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Design tokens shared by all windows of the background program. The editor
+// uses the same values (see docs/design.md).
+
+import { Palette } from "std-widgets.slint";
+
+export global Theme {
+    // Brand colours from the logo.
+    out property <color> brand: #5B5BF0;
+    out property <color> brand-end: #A24DF2;
+    out property <brush> brand-gradient: @linear-gradient(135deg, #5B5BF0 0%, #A24DF2 100%);
+
+    out property <bool> dark: Palette.color-scheme == ColorScheme.dark;
+
+    // Neutral colours that follow light and dark mode.
+    out property <color> text: Palette.foreground;
+    out property <color> muted: dark ? #A1A1AA : #6B7280;
+    out property <color> surface: Palette.background;
+    out property <color> raised: dark ? #26262B : #F6F6F9;
+    out property <color> border: dark ? #3F3F46 : #E4E4E7;
+    out property <color> hover: dark ? #2E2E35 : #F1F0FB;
+    out property <color> selected: dark ? #3730A3 : #E8E6FD;
+    out property <color> chip: dark ? #312E81 : #EDE9FE;
+    out property <color> chip-text: dark ? #E0E7FF : #4C1D95;
+    out property <color> success: dark ? #4ADE80 : #15803D;
+    out property <color> warning: dark ? #FBBF24 : #B45309;
+    out property <color> error: dark ? #F87171 : #B91C1C;
+
+    // Spacing and shape.
+    out property <length> radius: 8px;
+    out property <length> radius-large: 12px;
+    out property <length> gap: 8px;
+    out property <length> padding: 16px;
+    out property <length> padding-large: 24px;
+
+    // Typography.
+    out property <length> font-small: 12px;
+    out property <length> font-body: 14px;
+    out property <length> font-title: 20px;
+    out property <length> font-hero: 26px;
+}
+
+// A rounded label that shows a trigger such as `:sig`.
+export component TriggerChip inherits Rectangle {
+    in property <string> text;
+    background: Theme.chip;
+    border-radius: 6px;
+    min-width: label.preferred-width + 16px;
+    height: 24px;
+    label := Text {
+        text: root.text;
+        color: Theme.chip-text;
+        font-size: Theme.font-small;
+        font-weight: 600;
+        font-family: "monospace";
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// The logo as a small badge.
+export component Logo inherits Image {
+    source: @image-url("images/icon.png");
+    width: 32px;
+    height: 32px;
+    image-rendering: smooth;
+}
+
+// A check result line: icon, title and an optional explanation.
+export component StatusLine inherits HorizontalLayout {
+    in property <bool> ok;
+    in property <string> title;
+    in property <string> detail;
+    spacing: Theme.gap;
+    Text {
+        text: root.ok ? "✓" : "!";
+        color: root.ok ? Theme.success : Theme.warning;
+        font-weight: 700;
+        font-size: Theme.font-body;
+        width: 16px;
+    }
+    VerticalLayout {
+        spacing: 2px;
+        Text {
+            text: root.title;
+            color: Theme.text;
+            font-size: Theme.font-body;
+            wrap: word-wrap;
+        }
+        if root.detail != "": Text {
+            text: root.detail;
+            color: Theme.muted;
+            font-size: Theme.font-small;
+            wrap: word-wrap;
+        }
+    }
+}

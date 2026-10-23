@@ -1,0 +1,224 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Quick search: opens with a hotkey, finds a snippet and inserts it into the
+// app that was active before.
+
+import { LineEdit, ListView, Button } from "std-widgets.slint";
+import { Theme, TriggerChip, Logo } from "theme.slint";
+
+export struct SnippetItem {
+    id: string,
+    trigger: string,
+    label: string,
+    preview: string,
+    has-form: bool,
+}
+
+component ResultRow inherits Rectangle {
+    in property <SnippetItem> item;
+    in property <bool> selected;
+    callback clicked();
+
+    height: 56px;
+    border-radius: Theme.radius;
+    background: root.selected ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
+    accessible-role: list-item;
+    accessible-label: root.item.label;
+    accessible-description: root.item.preview;
+    accessible-item-selected: root.selected;
+
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 12px;
+
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            horizontal-stretch: 1;
+            Text {
+                text: root.item.label;
+                color: Theme.text;
+                font-size: Theme.font-body;
+                font-weight: 600;
+                overflow: elide;
+            }
+
+            Text {
+                text: root.item.preview;
+                color: Theme.muted;
+                font-size: Theme.font-small;
+                overflow: elide;
+            }
+        }
+
+        if root.item.has-form: Text {
+            text: @tr("Form");
+            color: Theme.muted;
+            font-size: Theme.font-small;
+            vertical-alignment: center;
+        }
+
+        VerticalLayout {
+            alignment: center;
+            TriggerChip {
+                text: root.item.trigger;
+            }
+        }
+    }
+}
+
+export component SearchWindow inherits Window {
+    in property <[SnippetItem]> results;
+    in property <bool> library-empty;
+    in-out property <string> query;
+    in-out property <int> selected: 0;
+
+    callback search(query: string);
+    callback choose(index: int);
+    callback cancel();
+    callback open-editor();
+
+    public function prepare() {
+        root.selected = 0;
+        list.content-y = 0;
+        field.select-all();
+        field.focus();
+    }
+
+    function move-selection(delta: int) {
+        if root.results.length == 0 {
+            return;
+        }
+        root.selected = max(0, min(root.results.length - 1, root.selected + delta));
+        // Keep the selected row visible.
+        if -list.content-y > root.selected * 56px {
+            list.content-y = -root.selected * 56px;
+        }
+        if (root.selected + 1) * 56px > -list.content-y + list.visible-height {
+            list.content-y = -((root.selected + 1) * 56px - list.visible-height);
+        }
+    }
+
+    title: @tr("Typlet – search snippets");
+    icon: @image-url("images/icon.png");
+    width: 600px;
+    height: 440px;
+    no-frame: true;
+    always-on-top: true;
+    background: Theme.surface;
+
+    FocusScope {
+        capture-key-pressed(event) => {
+            if event.text == Key.Escape {
+                root.cancel();
+                return accept;
+            }
+            if event.text == Key.DownArrow {
+                root.move-selection(1);
+                return accept;
+            }
+            if event.text == Key.UpArrow {
+                root.move-selection(-1);
+                return accept;
+            }
+            if event.text == Key.PageDown {
+                root.move-selection(6);
+                return accept;
+            }
+            if event.text == Key.PageUp {
+                root.move-selection(-6);
+                return accept;
+            }
+            if event.text == Key.Return {
+                if root.results.length > 0 {
+                    root.choose(root.selected);
+                }
+                return accept;
+            }
+            reject
+        }
+
+        Rectangle {
+            border-width: 1px;
+            border-color: Theme.border;
+
+            VerticalLayout {
+                padding: Theme.padding;
+                spacing: Theme.gap;
+
+                HorizontalLayout {
+                    spacing: 12px;
+                    Logo {
+                        width: 28px;
+                        height: 28px;
+                        y: 2px;
+                    }
+
+                    field := LineEdit {
+                        placeholder-text: @tr("Search by name, trigger or text…");
+                        text <=> root.query;
+                        font-size: 16px;
+                        edited(text) => {
+                            root.selected = 0;
+                            list.content-y = 0;
+                            root.search(text);
+                        }
+                    }
+                }
+
+                Rectangle {
+                    vertical-stretch: 1;
+
+                    list := ListView {
+                        width: parent.width;
+                        height: parent.height;
+                        for item[i] in root.results: ResultRow {
+                            item: item;
+                            selected: i == root.selected;
+                            clicked => {
+                                root.selected = i;
+                                root.choose(i);
+                            }
+                        }
+                    }
+
+                    if root.results.length == 0: VerticalLayout {
+                        width: parent.width;
+                        height: parent.height;
+                        alignment: center;
+                        spacing: Theme.gap;
+                        Text {
+                            text: root.library-empty ? @tr("You have no snippets yet.") : @tr("No snippet matches your search.");
+                            color: Theme.muted;
+                            font-size: Theme.font-body;
+                            horizontal-alignment: center;
+                        }
+
+                        if root.library-empty: HorizontalLayout {
+                            alignment: center;
+                            Button {
+                                text: @tr("Create snippets in the editor");
+                                clicked => {
+                                    root.open-editor();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Text {
+                    text: @tr("↑ ↓ choose  ·  Enter insert  ·  Esc close");
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    horizontal-alignment: center;
+                }
+            }
+        }
+    }
+}

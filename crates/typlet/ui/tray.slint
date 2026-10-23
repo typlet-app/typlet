@@ -1,0 +1,106 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The tray icon and its menu: the main entry point of the background program.
+
+export component TrayIcon inherits SystemTrayIcon {
+    in property <bool> paused;
+    in-out property <bool> autostart;
+    in property <string> search-shortcut;
+
+    callback search();
+    callback new-snippet();
+    callback open-editor();
+    callback open-folder();
+    callback toggle-pause();
+    callback toggle-autostart();
+    callback setup();
+    callback diagnostics();
+    callback help();
+    callback quit();
+
+    icon: root.paused ? @image-url("images/tray-paused.png") : @image-url("images/tray.png");
+    title: "Typlet";
+    tooltip: root.paused ? @tr("Typlet is paused") : @tr("Typlet is active");
+    clicked => {
+        root.search();
+    }
+
+    Menu {
+        MenuItem {
+            title: root.search-shortcut == "" ? @tr("Search snippets…") : @tr("Search snippets…  ({})", root.search-shortcut);
+            activated => {
+                root.search();
+            }
+        }
+
+        MenuItem {
+            title: @tr("New snippet…");
+            activated => {
+                root.new-snippet();
+            }
+        }
+
+        MenuItem {
+            title: @tr("Open editor");
+            activated => {
+                root.open-editor();
+            }
+        }
+
+        MenuItem {
+            title: @tr("Open snippet folder");
+            activated => {
+                root.open-folder();
+            }
+        }
+
+        MenuSeparator { }
+
+        MenuItem {
+            title: root.paused ? @tr("Resume Typlet") : @tr("Pause Typlet");
+            activated => {
+                root.toggle-pause();
+            }
+        }
+
+        MenuItem {
+            title: @tr("Start with the computer");
+            checkable: true;
+            checked <=> root.autostart;
+            activated => {
+                root.toggle-autostart();
+            }
+        }
+
+        MenuSeparator { }
+
+        MenuItem {
+            title: @tr("Set up and test…");
+            activated => {
+                root.setup();
+            }
+        }
+
+        MenuItem {
+            title: @tr("Diagnostics…");
+            activated => {
+                root.diagnostics();
+            }
+        }
+
+        MenuItem {
+            title: @tr("Help");
+            activated => {
+                root.help();
+            }
+        }
+
+        MenuSeparator { }
+
+        MenuItem {
+            title: @tr("Quit Typlet");
+            activated => {
+                root.quit();
+            }
+        }
+    }
+}

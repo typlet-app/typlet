@@ -1,0 +1,51 @@
+[package]
+name = "typlet"
+description = "The Typlet background program: expands snippets as you type, with tray icon, quick search and forms."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+publish = false
+build = "build.rs"
+
+[[bin]]
+name = "typlet"
+path = "src/main.rs"
+
+[dependencies]
+typlet-core.workspace = true
+typlet-platform.workspace = true
+chrono.workspace = true
+crossbeam-channel.workspace = true
+log.workspace = true
+notify = { version = "8.2", default-features = false }
+raw-window-handle = "0.6"
+serde_json.workspace = true
+slint = { version = "1.18", default-features = false, features = [
+    "std",
+    "backend-winit",
+    "renderer-femtovg",
+    "renderer-software",
+    "accessibility",
+    "compat-1-2",
+    "system-tray",
+    "raw-window-handle-06",
+] }
+
+[build-dependencies]
+slint-build = "1.18"
+
+[dev-dependencies]
+png = "0.18"
+# The screenshot example renders with the software renderer and system fonts.
+slint = { version = "1.18", default-features = false, features = ["software-renderer-systemfonts"] }
+tempfile.workspace = true
+
+[lints]
+workspace = true

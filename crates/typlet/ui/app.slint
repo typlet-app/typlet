@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Entry point of the user interface. Every exported component becomes a Rust
+// type in `slint::include_modules!()`.
+
+export { TrayIcon } from "tray.slint";
+export { SearchWindow, SnippetItem } from "search.slint";
+export { FormWindow, FormField, FieldKind } from "form.slint";
+export { CreateWindow, TriggerProblem } from "create.slint";
+export { SetupWindow, ExampleItem } from "setup.slint";
+export { DiagnosticsWindow, AttemptItem, AttemptKind } from "diagnostics.slint";
+export { MessageWindow, MessageKind } from "message.slint";

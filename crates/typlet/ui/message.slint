@@ -1,0 +1,121 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// A small message window for notices and errors. The texts live here so they
+// can be translated; the program only passes the kind and technical details.
+
+import { Button, TextEdit } from "std-widgets.slint";
+import { Theme, Logo } from "theme.slint";
+
+export enum MessageKind {
+    already-running,
+    no-selection,
+    insert-failed,
+    input-failed,
+    library-problem,
+    settings-problem,
+    editor-missing,
+}
+
+export component MessageWindow inherits Window {
+    in property <MessageKind> kind;
+    in property <string> detail;
+
+    callback primary-action();
+    callback dismiss();
+
+    out property <bool> is-error: root.kind == MessageKind.insert-failed || root.kind == MessageKind.input-failed || root.kind == MessageKind.library-problem || root.kind == MessageKind.settings-problem;
+    out property <string> heading: root.kind == MessageKind.already-running ? @tr("Typlet is already running")
+        : root.kind == MessageKind.no-selection ? @tr("No text selected")
+        : root.kind == MessageKind.insert-failed ? @tr("The snippet could not be inserted")
+        : root.kind == MessageKind.input-failed ? @tr("Typlet cannot read the keyboard")
+        : root.kind == MessageKind.library-problem ? @tr("Some snippets could not be loaded")
+        : root.kind == MessageKind.settings-problem ? @tr("The settings could not be read")
+        : @tr("The editor is not installed");
+    out property <string> body: root.kind == MessageKind.already-running ? @tr("You find Typlet as an icon in the system tray, next to the clock.")
+        : root.kind == MessageKind.no-selection ? @tr("Select some text first, then press the shortcut again. Typlet turns the selection into a new snippet.")
+        : root.kind == MessageKind.insert-failed ? @tr("The app may be running as administrator, or it blocks simulated typing. Diagnostics shows what happened.")
+        : root.kind == MessageKind.input-failed ? @tr("Without keyboard access, triggers cannot expand. The set-up assistant explains how to fix this.")
+        : root.kind == MessageKind.library-problem ? @tr("The other snippets work normally. Diagnostics lists the affected files.")
+        : root.kind == MessageKind.settings-problem ? @tr("Typlet uses the default settings until the file is fixed.")
+        : @tr("Typlet opens your snippet folder instead.");
+    out property <string> action: root.kind == MessageKind.input-failed ? @tr("Open set-up assistant")
+        : root.kind == MessageKind.insert-failed || root.kind == MessageKind.library-problem ? @tr("Open diagnostics")
+        : "";
+
+    title: "Typlet";
+    icon: @image-url("images/icon.png");
+    preferred-width: 440px;
+    min-width: 360px;
+    always-on-top: true;
+    background: Theme.surface;
+
+    FocusScope {
+        capture-key-pressed(event) => {
+            if event.text == Key.Escape || event.text == Key.Return {
+                root.dismiss();
+                return accept;
+            }
+            reject
+        }
+
+        VerticalLayout {
+            padding: Theme.padding-large;
+            spacing: Theme.padding;
+
+            HorizontalLayout {
+                spacing: 14px;
+                Logo {
+                    width: 40px;
+                    height: 40px;
+                }
+
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 4px;
+                    Text {
+                        text: root.heading;
+                        color: root.is-error ? Theme.error : Theme.text;
+                        font-size: Theme.font-title;
+                        font-weight: 600;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+
+            Text {
+                text: root.body;
+                color: Theme.text;
+                font-size: Theme.font-body;
+                wrap: word-wrap;
+            }
+
+            if root.detail != "": TextEdit {
+                text: root.detail;
+                read-only: true;
+                font-size: Theme.font-small;
+                font-family: "monospace";
+                wrap: word-wrap;
+                height: 72px;
+            }
+
+            HorizontalLayout {
+                spacing: Theme.gap;
+                alignment: end;
+                if root.action != "": Button {
+                    text: root.action;
+                    clicked => {
+                        root.primary-action();
+                        root.dismiss();
+                    }
+                }
+
+                Button {
+                    text: @tr("OK");
+                    primary: true;
+                    clicked => {
+                        root.dismiss();
+                    }
+                }
+            }
+        }
+    }
+}

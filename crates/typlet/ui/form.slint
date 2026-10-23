@@ -1,0 +1,161 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Fill-in form shown before a snippet with fields is inserted.
+
+import { LineEdit, TextEdit, ComboBox, Switch, Button, ScrollView } from "std-widgets.slint";
+import { Theme, TriggerChip } from "theme.slint";
+
+export enum FieldKind { text, multiline, choice, yes-no }
+
+export struct FormField {
+    label: string,
+    kind: FieldKind,
+    value: string,
+    options: [string],
+}
+
+export component FormWindow inherits Window {
+    in property <string> snippet-label;
+    in property <string> trigger;
+    in property <[FormField]> fields;
+
+    callback field-edited(index: int, value: string);
+    callback submit();
+    callback cancel();
+
+    // The words inserted for yes/no fields, in the interface language.
+    out property <string> yes-word: @tr("Yes");
+    out property <string> no-word: @tr("No");
+
+    title: @tr("Typlet – {}", root.snippet-label);
+    icon: @image-url("images/icon.png");
+    preferred-width: 460px;
+    min-width: 380px;
+    preferred-height: min(640px, 150px + root.fields.length * 76px);
+    always-on-top: true;
+    background: Theme.surface;
+
+    FocusScope {
+        capture-key-pressed(event) => {
+            if event.text == Key.Escape {
+                root.cancel();
+                return accept;
+            }
+            // Ctrl+Enter inserts from anywhere, also from multi-line fields.
+            if event.text == Key.Return && event.modifiers.control {
+                root.submit();
+                return accept;
+            }
+            reject
+        }
+
+        VerticalLayout {
+            padding: Theme.padding-large;
+            spacing: Theme.padding;
+
+            HorizontalLayout {
+                spacing: Theme.gap;
+                Text {
+                    text: root.snippet-label;
+                    color: Theme.text;
+                    font-size: Theme.font-title;
+                    font-weight: 600;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+
+                VerticalLayout {
+                    alignment: center;
+                    TriggerChip {
+                        text: root.trigger;
+                    }
+                }
+            }
+
+            ScrollView {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    spacing: 14px;
+                    alignment: start;
+                    for field[i] in root.fields: VerticalLayout {
+                        spacing: 6px;
+                        Text {
+                            text: field.label;
+                            color: Theme.text;
+                            font-size: Theme.font-body;
+                            font-weight: 600;
+                        }
+
+                        if field.kind == FieldKind.text: LineEdit {
+                            text: field.value;
+                            init => {
+                                if i == 0 {
+                                    self.focus();
+                                }
+                            }
+                            edited(value) => {
+                                root.field-edited(i, value);
+                            }
+                            accepted => {
+                                root.submit();
+                            }
+                        }
+                        if field.kind == FieldKind.multiline: TextEdit {
+                            text: field.value;
+                            init => {
+                                if i == 0 {
+                                    self.focus();
+                                }
+                            }
+                            height: 88px;
+                            wrap: word-wrap;
+                            edited(value) => {
+                                root.field-edited(i, value);
+                            }
+                        }
+                        if field.kind == FieldKind.choice: ComboBox {
+                            model: field.options;
+                            current-value: field.value;
+                            selected(value) => {
+                                root.field-edited(i, value);
+                            }
+                        }
+                        if field.kind == FieldKind.yes-no: Switch {
+                            text: field.value == root.yes-word ? root.yes-word : root.no-word;
+                            checked: field.value == root.yes-word;
+                            toggled => {
+                                root.field-edited(i, self.checked ? root.yes-word : root.no-word);
+                            }
+                        }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                spacing: Theme.gap;
+                alignment: end;
+                Text {
+                    text: @tr("Ctrl+Enter inserts");
+                    color: Theme.muted;
+                    font-size: Theme.font-small;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+
+                Button {
+                    text: @tr("Cancel");
+                    clicked => {
+                        root.cancel();
+                    }
+                }
+
+                Button {
+                    text: @tr("Insert");
+                    primary: true;
+                    clicked => {
+                        root.submit();
+                    }
+                }
+            }
+        }
+    }
+}
