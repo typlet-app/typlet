@@ -97,6 +97,17 @@ For every cell check:
 - [ ] "Edit in the editor" after creating a snippet from a selection opens exactly that snippet.
 - [ ] Import from espanso: dates, clipboard, forms and formatted text arrive; scripts and regex triggers are listed as not imported; espanso's files are unchanged.
 
+## 7a. Updates
+
+Needs two releases (or a test release) signed with the update key.
+
+- [ ] With an older version installed, the tray menu shows "Install update …" within about two minutes after start, and a message announces the new version once.
+- [ ] "Install now" opens the editor's update page; installing shows a progress bar, Typlet restarts, and the editor reports "up to date".
+- [ ] Windows: the background program is the new version afterwards (Diagnostics shows "Typlet <version>"); snippets and settings are unchanged.
+- [ ] Ubuntu (deb): the password prompt appears; afterwards both programs run the new version.
+- [ ] AppImage: the file is replaced; both programs restart.
+- [ ] Settings → switching off the daily check stops new checks (`update.json` keeps its date).
+
 ## 8. Safety and privacy
 
 - [ ] In a password field (Windows login form in a browser, KeePass), triggers do not expand; Diagnostics says "skipped: password field".

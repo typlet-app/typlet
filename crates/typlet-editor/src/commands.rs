@@ -32,6 +32,11 @@ pub(crate) struct StartArgs {
     /// Only make sure the background program runs, without a window
     /// (`--autostart` or `--background`).
     pub(crate) background_only: bool,
+    /// Check for a new version without a window and exit
+    /// (`--check-updates`, started by the background program).
+    pub(crate) check_updates: bool,
+    /// Open the update page (`--update`).
+    pub(crate) open_update: bool,
 }
 
 impl StartArgs {
@@ -43,6 +48,8 @@ impl StartArgs {
                 "--open" => parsed.open_snippet = args.next(),
                 "--settings" => parsed.open_settings = true,
                 "--autostart" | "--background" => parsed.background_only = true,
+                "--check-updates" => parsed.check_updates = true,
+                "--update" => parsed.open_update = true,
                 _ => {}
             }
         }
@@ -71,6 +78,7 @@ pub(crate) struct AppInfo {
     default_espanso_dir: Option<PathBuf>,
     open_snippet: Option<String>,
     open_settings: bool,
+    open_update: bool,
     system_german: bool,
     background_running: bool,
 }
@@ -85,6 +93,7 @@ pub(crate) fn app_info(state: State<'_, EditorState>) -> AppInfo {
         default_espanso_dir: espanso_dir(),
         open_snippet: state.start.open_snippet.clone(),
         open_settings: state.start.open_settings,
+        open_update: state.start.open_update,
         system_german: typlet_platform::system_language()
             .is_some_and(|lang| lang.to_lowercase().starts_with("de")),
         background_running: typlet_platform::instance::is_running(&paths.lock_file),
@@ -376,6 +385,23 @@ pub(crate) fn open_folder(state: State<'_, EditorState>, which: String) {
     crate::os::open_folder(&dir);
 }
 
+/// Where `open_link` leads. The interface names a page; it never passes a
+/// URL, so it cannot open arbitrary addresses.
+fn link(which: &str) -> Option<&'static str> {
+    match which {
+        "download" => Some("https://github.com/typlet-app/typlet/releases/latest"),
+        _ => None,
+    }
+}
+
+/// Opens one of Typlet's web pages in the browser.
+#[tauri::command]
+pub(crate) fn open_link(which: String) -> CommandResult<()> {
+    let url = link(&which).ok_or_else(|| format!("unknown link: {which}"))?;
+    crate::os::open_url(url);
+    Ok(())
+}
+
 /// Starts the background program if it is not running.
 #[tauri::command]
 pub(crate) fn start_background(state: State<'_, EditorState>) -> bool {
@@ -392,6 +418,15 @@ mod tests {
     }
 
     #[test]
+    fn links_are_a_fixed_list() {
+        assert_eq!(
+            link("download"),
+            Some("https://github.com/typlet-app/typlet/releases/latest")
+        );
+        assert_eq!(link("https://example.com"), None);
+    }
+
+    #[test]
     fn start_arguments() {
         let args = StartArgs::parse([
             "--open".to_owned(),
@@ -402,6 +437,8 @@ mod tests {
         assert!(args.open_settings);
         assert!(!args.background_only);
         assert!(StartArgs::parse(["--autostart".to_owned()]).background_only);
+        assert!(StartArgs::parse(["--check-updates".to_owned()]).check_updates);
+        assert!(StartArgs::parse(["--update".to_owned()]).open_update);
     }
 
     #[test]

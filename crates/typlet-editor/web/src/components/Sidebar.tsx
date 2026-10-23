@@ -9,7 +9,7 @@ import type { LoadedSnippet } from "../types";
 interface Props {
   snippets: LoadedSnippet[];
   selectedId: string | null;
-  page: "snippet" | "settings" | "import" | "home";
+  page: "snippet" | "settings" | "import" | "home" | "update";
   conflicted: Set<string>;
   backgroundRunning: boolean;
   onSelect: (id: string) => void;

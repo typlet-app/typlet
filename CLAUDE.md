@@ -23,7 +23,7 @@ All five must pass before a change is finished. CI runs them on Linux and Window
    - `docs/snippet-format.md` and `docs/examples/` when the format changes (tests load every example),
    - a new ADR in `docs/adr/` for every architectural decision (never edit accepted ADRs; supersede them),
    - README screenshots whenever the UI changes visibly.
-2. **Privacy:** never log, print, persist or transmit typed characters. The background program has no network access.
+2. **Privacy:** never log, print, persist or transmit typed characters. The background program has no network access; only the editor connects, to check for and download signed updates (ADR 0015).
 3. **`typlet-core` stays pure:** no `unsafe`, no OS access, no UI.
 4. **Tests accompany code.** Bug fixes include a regression test.
 5. Every source file starts with `// SPDX-License-Identifier: GPL-3.0-or-later`.

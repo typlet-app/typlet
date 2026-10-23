@@ -46,6 +46,7 @@ Typlet V1 targets **Windows** as the polished product and **Linux (Wayland)** at
 - [x] Pause in password fields (Windows)
 - [x] Installers without admin rights (Windows), AppImage and Debian package (Linux)
 - [x] Release workflow with draft releases and checksums
+- [x] Automatic updates: daily check by the editor, signed installers, one-click install *(needs the update key secret, see [releasing](releasing.md#update-signing-key))*
 - [ ] Code signing via SignPath *(workflow ready; needs the SignPath account, see [releasing](releasing.md#code-signing))*
 - [ ] Microsoft Store submission *(steps in [releasing](releasing.md#microsoft-store))*
 - [x] Screenshots and user guide in the README

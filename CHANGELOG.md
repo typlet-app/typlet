@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Automatic updates: the editor checks GitHub once a day (the background program stays offline), the tray menu and a one-time message offer the new version, and the editor's update page installs it with one click and restarts Typlet. Updates are signed including their version; the release workflow publishes `latest.json` (ADR 0015). The daily check can be switched off in the settings.
 - Installers (milestone M5): Windows NSIS installer per user without admin rights, Debian package with udev rule and `input` group set-up, AppImage; built by the new release workflow from version tags as draft releases with checksums, with an install/uninstall smoke test on every build; code-signing step prepared for SignPath (ADR 0013, docs/releasing.md).
 - The editor accepts `--autostart`/`--background` to start only the background program (used by the AppImage at login).
 - User guide: installing; README: download section.
@@ -70,6 +71,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- 0.x versions are published as normal releases titled "Beta" (only versions like `1.0.0-rc.1` are pre-releases), so the updater finds them.
 - Windows: Typlet reads the keyboard with Raw Input instead of a low-level keyboard hook and registers its shortcuts with Windows (`RegisterHotKey`). Raw input only reads, so the Backspace that undoes an expansion now reaches the app first, as on Linux (ADR 0014).
 - CI: installing Linux packages on the runners is time-limited and retried (`scripts/install-linux-deps.sh`); a hanging package mirror had blocked jobs for hours.
 - ADR 0003 is partly superseded by ADR 0010: the set-up assistant lives in the background program.

@@ -18,7 +18,8 @@
         "height": 740,
         "minWidth": 880,
         "minHeight": 560,
-        "center": true
+        "center": true,
+        "create": false
       }
     ],
     "security": {
@@ -34,5 +35,17 @@
       "icons/icon.ico",
       "icons/icon.png"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4NUFBNkYzRDg1QUM5NzEKUldSeHlWclk4NlphT0lxcmZPYzdVM2xNVjRmUVlpc1g1YkN4ZENNNVIzTncvTFBmVjNsRUt1YVcK",
+      "endpoints": [
+        "https://github.com/typlet-app/typlet/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      },
+      "requireSignedVersion": true
+    }
   }
 }

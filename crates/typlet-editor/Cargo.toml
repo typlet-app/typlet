@@ -29,11 +29,24 @@ tauri = { version = "2.12", features = [] }
 tauri-plugin-dialog = "2.8"
 tauri-plugin-single-instance = "2.5"
 
+# The updater, without its `zip` feature: Typlet ships plain installers.
+# Windows uses the system's TLS (Schannel), so company proxies whose root
+# certificates are installed in Windows are trusted; Linux uses rustls and
+# needs no OpenSSL.
+[target.'cfg(windows)'.dependencies]
+tauri-plugin-updater = { version = "2.14", default-features = false, features = ["native-tls", "system-proxy"] }
+
+[target.'cfg(not(windows))'.dependencies]
+tauri-plugin-updater = { version = "2.14", default-features = false, features = ["rustls-tls", "system-proxy"] }
+
 [build-dependencies]
 tauri-build = { version = "2.5", features = [] }
 
 [dev-dependencies]
 tempfile.workspace = true
+# The updater's own signature libraries, to test the release key (tests/updater_key.rs).
+base64 = "0.22"
+minisign-verify = "0.3"
 
 [features]
 # Enabled by `tauri build`: serve the bundled frontend instead of the dev server.

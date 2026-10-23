@@ -392,5 +392,17 @@ msgstr "Ein anderes Programm benutzt bereits {}, deshalb kann Typlet sie nicht v
 msgid "Open settings"
 msgstr "Einstellungen öffnen"
 
+msgid "Typlet {} is available"
+msgstr "Typlet {} ist da"
+
+msgid "Install the new version now? It takes about a minute. Your snippets and settings stay as they are."
+msgstr "Jetzt die neue Version installieren? Das dauert etwa eine Minute. Deine Textbausteine und Einstellungen bleiben erhalten."
+
+msgid "Install now"
+msgstr "Jetzt installieren"
+
+msgid "Install update {}"
+msgstr "Update {} installieren"
+
 msgid "OK"
 msgstr "OK"

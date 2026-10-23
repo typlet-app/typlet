@@ -87,6 +87,7 @@ The [user guide](docs/user-guide.md#installing) ([Deutsch](docs/user-guide.de.md
 | ⚙️ Settings and app rules in the editor | ✅ |
 | 📥 Import from espanso | ✅ |
 | 📦 Installers: Windows (per user), Debian package, AppImage | ✅ |
+| 🔄 Automatic updates, signed, checked once a day by the editor | ✅ |
 | 🔏 Code signing and Microsoft Store | 🗺️ |
 
 See the [roadmap](docs/roadmap.md) for milestones and what comes after V1 (macOS, sync, team libraries).
@@ -167,7 +168,7 @@ A text expander has to see what you type. These rules are built into Typlet:
 
 - Only the last few characters are kept in memory, just enough to recognise an abbreviation ([matcher](crates/typlet-core/src/matcher.rs)).
 - Nothing you type or insert is ever written to disk or logged; diagnostics record app names and outcomes only.
-- The background program that sees your keystrokes has no network code.
+- The background program that sees your keystrokes has no network code. Only the editor goes online, once a day, to ask GitHub for a new version; updates are signed ([ADR 0015](docs/adr/0015-automatic-updates.md)).
 - Typlet pauses automatically in password fields (Windows; GNOME does not expose them yet).
 - Text Typlet puts on the clipboard stays out of the Windows clipboard history and cloud sync.
 

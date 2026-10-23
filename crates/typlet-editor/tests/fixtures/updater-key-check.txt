@@ -1,0 +1,1 @@
+Typlet updater key check. This file is signed with the release key.
