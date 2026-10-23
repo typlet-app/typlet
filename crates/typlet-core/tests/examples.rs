@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use chrono::NaiveDate;
-use typlet_core::{InsertMethod, Library, RenderContext, render};
+use typlet_core::{DateLanguage, InsertMethod, Library, RenderContext, render};
 
 fn examples_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../docs/examples")
@@ -22,6 +22,7 @@ fn context(fields: &HashMap<String, String>) -> RenderContext<'_> {
             .unwrap(),
         clipboard: Some("Zwischenablage"),
         fields,
+        date_language: DateLanguage::German,
     }
 }
 

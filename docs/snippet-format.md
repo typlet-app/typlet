@@ -73,7 +73,9 @@ Unknown fields are ignored, so newer files with extra optional data still load i
 | `clipboard` | | The clipboard text at the moment of expansion. |
 | `field` | `name` | The value entered for the [field](#fields) with that name. |
 
-Common date formats: `%d.%m.%Y` → `23.10.2026`, `%d.%m.%Y, %H:%M` → `23.10.2026, 09:42`, `%A, %e. %B %Y` → `Friday, 23. October 2026` (localised names follow with the engine).
+Common date formats: `%d.%m.%Y` → `23.10.2026`, `%d.%m.%Y, %H:%M` → `23.10.2026, 09:42`, `%A, %-d. %B %Y` → `Friday, 23. October 2026`.
+
+Day and month names (`%A`, `%a`, `%B`, `%b`) follow the interface language: with German they become `Freitag, 23. Oktober 2026`. Numbers and separators come only from the format.
 
 ### Marks
 

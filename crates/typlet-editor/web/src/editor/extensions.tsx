@@ -8,7 +8,7 @@ import { createContext, useContext } from "react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
 import { NODE } from "../convert";
-import { useT } from "../i18n";
+import { useLang, useT } from "../i18n";
 import { shiftedToday, strftime } from "../strftime";
 import type { FieldDef } from "../types";
 
@@ -33,9 +33,10 @@ function Chip(props: { kind: string; icon: string; label: string; selected: bool
 
 function DateChip({ node, selected }: ReactNodeViewProps) {
   const t = useT();
+  const lang = useLang();
   const format = String(node.attrs["format"] ?? "%d.%m.%Y");
   const offset = Number(node.attrs["offsetDays"] ?? 0);
-  const example = strftime(format, shiftedToday(offset));
+  const example = strftime(format, shiftedToday(offset), lang);
   const title = offset === 0 ? t("chip_date_title") : t("chip_date_offset_title", { days: offset });
   return <Chip kind="date" icon="📅" label={example} selected={selected} title={title} />;
 }

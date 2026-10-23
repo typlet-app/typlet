@@ -14,6 +14,11 @@ describe("strftime", () => {
     expect(strftime("%A %e %b %a %S %%", date)).toBe("Saturday  3 Oct Sat 07 %");
   });
 
+  it("uses German names like chrono's de_DE locale", () => {
+    expect(strftime("%A, %-d. %B %Y", date, "de")).toBe("Samstag, 3. Oktober 2026");
+    expect(strftime("%a %b", new Date(2026, 2, 6), "de")).toBe("Fr Mär");
+  });
+
   it("keeps unknown patterns", () => {
     expect(strftime("%Q", date)).toBe("%Q");
   });

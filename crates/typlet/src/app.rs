@@ -11,8 +11,8 @@ use crossbeam_channel::Sender;
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use typlet_core::snippet::validate_trigger;
 use typlet_core::{
-    Document, FieldKind as CoreFieldKind, Language, Library, RenderContext, Settings, Snippet,
-    SnippetId, ValidationError, render,
+    DateLanguage, Document, FieldKind as CoreFieldKind, Language, Library, RenderContext, Settings,
+    Snippet, SnippetId, ValidationError, render,
 };
 use typlet_platform::paths::Paths;
 use typlet_platform::{Platform, autostart};
@@ -113,8 +113,8 @@ fn load_settings(paths: &Paths) -> (Settings, Option<String>) {
     }
 }
 
-/// Whether the interface should be German.
-fn is_german(settings: &Settings) -> bool {
+/// Whether the interface (and dates) should be German.
+pub(crate) fn is_german(settings: &Settings) -> bool {
     match settings.language {
         Language::De => true,
         Language::En => false,
@@ -311,6 +311,14 @@ impl App {
     fn hide_window(&self, window: &slint::Window) {
         hide(window);
         self.update_quiet();
+    }
+
+    fn date_language(&self) -> DateLanguage {
+        if self.german() {
+            DateLanguage::German
+        } else {
+            DateLanguage::English
+        }
     }
 
     fn send(&self, command: Command) {
@@ -633,6 +641,7 @@ impl App {
     fn update_search(&self, query: &str) {
         let library = Arc::clone(&self.library.borrow());
         let now = chrono::Local::now().naive_local();
+        let language = self.date_language();
         let mut hits = library.search.search(query);
         hits.truncate(MAX_RESULTS);
         let items: Vec<SnippetItem> = hits
@@ -643,7 +652,7 @@ impl App {
                     id: snippet.id.to_string().into(),
                     trigger: snippet.trigger.as_str().into(),
                     label: snippet.label.as_str().into(),
-                    preview: snippet.content.preview(90, now).into(),
+                    preview: snippet.content.preview(90, now, language).into(),
                     has_form: !snippet.fields.is_empty(),
                 }
             })
@@ -803,8 +812,11 @@ impl App {
         }
         let mut label = create.get_label().trim().to_owned();
         if label.is_empty() {
-            label =
-                Document::from_plain_text(&text).preview(40, chrono::Local::now().naive_local());
+            label = Document::from_plain_text(&text).preview(
+                40,
+                chrono::Local::now().naive_local(),
+                self.date_language(),
+            );
         }
         let snippet = Snippet::new(trigger, label, Document::from_plain_text(&text));
         let library = Library::new(self.library.borrow().root.clone());
@@ -870,6 +882,7 @@ impl App {
             now: chrono::Local::now().naive_local(),
             clipboard: None,
             fields: &fields,
+            date_language: self.date_language(),
         };
         let expected = render(snippet, &context)
             .map(|rendered| rendered.plain.lines().next().unwrap_or_default().to_owned())

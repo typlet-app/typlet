@@ -3,15 +3,33 @@
 // the Rust renderer (chrono); this only covers the patterns the editor
 // offers, plus common ones users type by hand.
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+// The same names as the Rust renderer (chrono's en_US and de_DE locales).
+const NAMES = {
+  en: {
+    days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    shortDays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    months: [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December",
+    ],
+    shortMonths: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  },
+  de: {
+    days: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
+    shortDays: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+    months: [
+      "Januar", "Februar", "März", "April", "Mai", "Juni",
+      "Juli", "August", "September", "Oktober", "November", "Dezember",
+    ],
+    shortMonths: ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"],
+  },
+} as const;
 
 const pad = (n: number, width = 2) => String(n).padStart(width, "0");
 
-export function strftime(format: string, date: Date): string {
+/** Formats `date`; day and month names follow `lang` like the inserted text. */
+export function strftime(format: string, date: Date, lang: "en" | "de" = "en"): string {
+  const names = NAMES[lang];
   let out = "";
   for (let i = 0; i < format.length; i++) {
     const c = format[i];
@@ -35,10 +53,10 @@ export function strftime(format: string, date: Date): string {
       case "H": out += two(date.getHours()); break;
       case "M": out += two(date.getMinutes()); break;
       case "S": out += two(date.getSeconds()); break;
-      case "A": out += DAYS[date.getDay()] ?? ""; break;
-      case "a": out += (DAYS[date.getDay()] ?? "").slice(0, 3); break;
-      case "B": out += MONTHS[date.getMonth()] ?? ""; break;
-      case "b": out += (MONTHS[date.getMonth()] ?? "").slice(0, 3); break;
+      case "A": out += names.days[date.getDay()] ?? ""; break;
+      case "a": out += names.shortDays[date.getDay()] ?? ""; break;
+      case "B": out += names.months[date.getMonth()] ?? ""; break;
+      case "b": out += names.shortMonths[date.getMonth()] ?? ""; break;
       case "%": out += "%"; break;
       default: out += `%${noPad ? "-" : ""}${spec}`;
     }

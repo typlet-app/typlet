@@ -156,7 +156,12 @@ impl Document {
     /// shown as `📋` and form fields as `‹name›`. The result has at most
     /// `max_chars` characters and ends with `…` if it was shortened.
     #[must_use]
-    pub fn preview(&self, max_chars: usize, now: chrono::NaiveDateTime) -> String {
+    pub fn preview(
+        &self,
+        max_chars: usize,
+        now: chrono::NaiveDateTime,
+        language: crate::render::DateLanguage,
+    ) -> String {
         let mut out = String::new();
         for (i, block) in self.blocks.iter().enumerate() {
             if i > 0 && !out.is_empty() && !out.ends_with(' ') {
@@ -182,10 +187,12 @@ impl Document {
                         Inline::DateTime {
                             format,
                             offset_days,
-                        } => match crate::render::format_date(now, format, *offset_days) {
-                            Ok(date) => out.push_str(&date),
-                            Err(_) => out.push('?'),
-                        },
+                        } => {
+                            match crate::render::format_date(now, format, *offset_days, language) {
+                                Ok(date) => out.push_str(&date),
+                                Err(_) => out.push('?'),
+                            }
+                        }
                         Inline::Cursor => {}
                         Inline::Clipboard => out.push('📋'),
                         Inline::Field { name } => {
@@ -275,8 +282,14 @@ mod tests {
         let now = chrono::NaiveDate::from_ymd_opt(2026, 10, 23)
             .and_then(|d| d.and_hms_opt(9, 0, 0))
             .unwrap();
-        assert_eq!(doc.preview(80, now), "Hallo ‹name›, • eins • 📋 23.10.2026");
-        assert_eq!(doc.preview(8, now), "Hallo ‹…");
+        assert_eq!(
+            doc.preview(80, now, crate::render::DateLanguage::English),
+            "Hallo ‹name›, • eins • 📋 23.10.2026"
+        );
+        assert_eq!(
+            doc.preview(8, now, crate::render::DateLanguage::English),
+            "Hallo ‹…"
+        );
         assert!(doc.uses_clipboard());
         assert!(!Document::from_plain_text("x").uses_clipboard());
     }

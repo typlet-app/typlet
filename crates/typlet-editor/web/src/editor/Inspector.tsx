@@ -5,12 +5,13 @@ import type { Editor } from "@tiptap/core";
 import { NodeSelection } from "@tiptap/pm/state";
 import { useEditorState } from "@tiptap/react";
 import { NODE } from "../convert";
-import { useT } from "../i18n";
+import { useLang, useT } from "../i18n";
 import { DATE_PRESETS, shiftedToday, strftime } from "../strftime";
 import type { FieldDef } from "../types";
 
 export function Inspector({ editor, fields }: { editor: Editor; fields: FieldDef[] }) {
   const t = useT();
+  const lang = useLang();
   const selected = useEditorState({
     editor,
     selector: ({ editor: e }) => {
@@ -38,7 +39,7 @@ export function Inspector({ editor, fields }: { editor: Editor; fields: FieldDef
           >
             {DATE_PRESETS.map((preset) => (
               <option key={preset} value={preset}>
-                {strftime(preset, shiftedToday(offset))}
+                {strftime(preset, shiftedToday(offset), lang)}
               </option>
             ))}
             <option value="custom">{t("date_custom")}</option>
