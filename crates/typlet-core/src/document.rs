@@ -3,13 +3,16 @@
 //!
 //! A [`Document`] is a list of [`Block`]s (paragraphs and lists). Blocks hold
 //! [`Inline`] items: formatted text, line breaks and placeholders that are
-//! filled in at expansion time (date, cursor, clipboard, form fields).
+//! filled in at expansion time (date, cursor, clipboard, form fields, other
+//! snippets).
 //!
 //! The model is deliberately small. Everything here must be representable in
 //! plain text, HTML and RTF, because the target application decides which of
 //! those formats it accepts.
 
 use serde::{Deserialize, Serialize};
+
+use crate::snippet::{Snippet, SnippetId};
 
 /// The body of a snippet.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -72,6 +75,13 @@ pub enum Inline {
     Field {
         /// Name of the referenced field.
         name: String,
+    },
+    /// The text of another snippet ([`crate::nesting`]). Alone in a
+    /// paragraph it keeps its paragraphs and lists; inside text its blocks
+    /// become lines.
+    Snippet {
+        /// Id of the included snippet.
+        id: SnippetId,
     },
 }
 
@@ -142,6 +152,20 @@ impl Document {
             })
     }
 
+    /// Iterates mutably over all inline items of all blocks, in reading order.
+    pub fn inlines_mut(&mut self) -> impl Iterator<Item = &mut Inline> {
+        self.blocks
+            .iter_mut()
+            .flat_map(|block| -> Box<dyn Iterator<Item = &mut Inline> + '_> {
+                match block {
+                    Block::Paragraph { content } => Box::new(content.iter_mut()),
+                    Block::BulletList { items } | Block::OrderedList { items } => {
+                        Box::new(items.iter_mut().flatten())
+                    }
+                }
+            })
+    }
+
     /// Returns `true` if the document contains a clipboard placeholder, so the
     /// clipboard has to be read before rendering.
     #[must_use]
@@ -153,7 +177,8 @@ impl Document {
     /// A short, single-line preview for lists and search results.
     ///
     /// Dates are shown as they would be inserted at `now`; the clipboard is
-    /// shown as `📋` and form fields as `‹name›`. The result has at most
+    /// shown as `📋` and form fields as `‹name›`. Included snippets are shown
+    /// with their text, looked up in `snippets`. The result has at most
     /// `max_chars` characters and ends with `…` if it was shortened.
     #[must_use]
     pub fn preview(
@@ -161,8 +186,29 @@ impl Document {
         max_chars: usize,
         now: chrono::NaiveDateTime,
         language: crate::render::DateLanguage,
+        snippets: &[Snippet],
     ) -> String {
         let mut out = String::new();
+        self.preview_into(&mut out, max_chars, now, language, snippets, 0);
+        let trimmed = out.trim();
+        if trimmed.chars().count() <= max_chars {
+            return trimmed.to_owned();
+        }
+        let mut short: String = trimmed.chars().take(max_chars.saturating_sub(1)).collect();
+        short.truncate(short.trim_end().len());
+        short.push('…');
+        short
+    }
+
+    fn preview_into(
+        &self,
+        out: &mut String,
+        max_chars: usize,
+        now: chrono::NaiveDateTime,
+        language: crate::render::DateLanguage,
+        snippets: &[Snippet],
+        depth: usize,
+    ) {
         for (i, block) in self.blocks.iter().enumerate() {
             if i > 0 && !out.is_empty() && !out.ends_with(' ') {
                 out.push(' ');
@@ -200,6 +246,19 @@ impl Document {
                             out.push_str(name);
                             out.push('›');
                         }
+                        Inline::Snippet { id } => match crate::nesting::find(snippets, *id) {
+                            Some(included) if depth < crate::nesting::MAX_DEPTH => {
+                                included.content.preview_into(
+                                    out,
+                                    max_chars,
+                                    now,
+                                    language,
+                                    snippets,
+                                    depth + 1,
+                                );
+                            }
+                            _ => out.push('…'),
+                        },
                     }
                 }
             }
@@ -207,14 +266,6 @@ impl Document {
                 break;
             }
         }
-        let trimmed = out.trim();
-        if trimmed.chars().count() <= max_chars {
-            return trimmed.to_owned();
-        }
-        let mut short: String = trimmed.chars().take(max_chars.saturating_sub(1)).collect();
-        short.truncate(short.trim_end().len());
-        short.push('…');
-        short
     }
 
     /// Returns `true` if the document uses any formatting that plain text cannot
@@ -256,6 +307,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn preview_shows_included_snippets() {
+        let now = chrono::NaiveDate::from_ymd_opt(2026, 10, 23)
+            .and_then(|d| d.and_hms_opt(9, 0, 0))
+            .unwrap();
+        let greeting = Snippet::new(":gruss", "Gruß", Document::from_plain_text("Viele Grüße"));
+        let mail = Document {
+            blocks: vec![Block::Paragraph {
+                content: vec![Inline::text("Danke! "), Inline::Snippet { id: greeting.id }],
+            }],
+        };
+        let language = crate::render::DateLanguage::German;
+        assert_eq!(
+            mail.preview(80, now, language, std::slice::from_ref(&greeting)),
+            "Danke! Viele Grüße"
+        );
+        assert_eq!(mail.preview(80, now, language, &[]), "Danke! …");
+    }
+
+    #[test]
     fn preview_shows_placeholders_and_shortens() {
         let doc = Document {
             blocks: vec![
@@ -283,11 +353,11 @@ mod tests {
             .and_then(|d| d.and_hms_opt(9, 0, 0))
             .unwrap();
         assert_eq!(
-            doc.preview(80, now, crate::render::DateLanguage::English),
+            doc.preview(80, now, crate::render::DateLanguage::English, &[]),
             "Hallo ‹name›, • eins • 📋 23.10.2026"
         );
         assert_eq!(
-            doc.preview(8, now, crate::render::DateLanguage::English),
+            doc.preview(8, now, crate::render::DateLanguage::English, &[]),
             "Hallo ‹…"
         );
         assert!(doc.uses_clipboard());

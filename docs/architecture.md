@@ -80,7 +80,7 @@ sequenceDiagram
         En->>UI: ShowForm
         UI-->>En: Insert with field values
     end
-    En->>En: render (plain, HTML, RTF) → plan actions
+    En->>En: render (plain, HTML, RTF), included snippets resolved → plan actions
     En->>App: delete trigger (Backspace × n)
     alt short plain text
         En->>App: type text
@@ -120,6 +120,10 @@ Implemented in [`render/mod.rs`](../crates/typlet-core/src/render/mod.rs) (`Rend
 
 A snippet's `insert_mode` overrides the automatic choice; an app rule overrides both.
 
+### Snippets inside snippets
+
+A snippet can include another one by id ([ADR 0016](adr/0016-snippets-inside-snippets.md), [`nesting.rs`](../crates/typlet-core/src/nesting.rs)). The renderer resolves includes while it renders, with the whole library at hand (`RenderContext::snippets`): an include alone in a paragraph splices the included blocks, an include inside text flattens them into lines. Included cursors are dropped. Before rendering, the engine collects the form fields of the snippet and everything it includes (each name once) and whether any of them needs the clipboard. Missing includes, loops and chains deeper than five levels are render errors; the editor checks the same rules before saving, and the diagnostics list affected snippets.
+
 Clipboard handling in the platform layer:
 
 - The previous clipboard content is saved with **all formats** (Windows) and restored after pasting, unless another program changed the clipboard in the meantime (checked with the clipboard sequence number).
@@ -150,7 +154,7 @@ All windows share design tokens ([`theme.slint`](../crates/typlet/ui/theme.slint
 ```mermaid
 flowchart LR
     subgraph Web["Web interface (React + Tiptap)"]
-        L[Snippet list] --> E[Snippet editor<br/>chips for date, cursor,<br/>clipboard, form fields]
+        L[Snippet list] --> E[Snippet editor<br/>chips for date, cursor,<br/>clipboard, form fields,<br/>other snippets]
         E --> C["convert.ts<br/>Tiptap JSON ⇄ Typlet document"]
         S[Settings] 
         I[Import]
@@ -169,7 +173,8 @@ flowchart LR
 
 - The interface edits snippets in the **file format itself** (TypeScript types in [`types.ts`](../crates/typlet-editor/web/src/types.ts)); only the rich-text part is converted to and from Tiptap ([`convert.ts`](../crates/typlet-editor/web/src/convert.ts)). Tiptap is configured with exactly the formatting a snippet can hold; pasted Word or web content is reduced to that.
 - **All file access happens in Rust** through `typlet-core` ([`commands.rs`](../crates/typlet-editor/src/commands.rs)). The interface addresses snippets by id and categories by name; it never handles file paths for snippets. Category names are validated so they cannot escape the library folder.
-- The **preview** is rendered by the same Rust code that inserts snippets, so what the user sees is what gets inserted.
+- The **preview** is rendered by the same Rust code that inserts snippets, so what the user sees is what gets inserted. Included snippets are rendered from the saved library.
+- The snippet picker only offers snippets that do not lead back to the snippet being edited ([`nesting.ts`](../crates/typlet-editor/web/src/nesting.ts)); deleting a snippet that others include asks first.
 - Trigger problems (empty, spaces, duplicates, triggers that can never fire) are checked live in the interface with the same rules as the core ([`conflicts.ts`](../crates/typlet-editor/web/src/conflicts.ts)).
 - The webview may only load the bundled interface (strict content security policy) and may only use the dialog plugin besides Typlet's own commands ([`capabilities/default.json`](../crates/typlet-editor/capabilities/default.json)).
 - The editor is a single instance: a second start focuses the window and passes `--open <id>` or `--settings` (used by the background program's "Edit in the editor").

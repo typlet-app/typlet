@@ -95,7 +95,8 @@ For every cell check:
 - [ ] Unsaved changes: switching to another snippet asks before discarding.
 - [ ] Settings: changing the language, a shortcut or an app rule takes effect in the background program without a restart.
 - [ ] "Edit in the editor" after creating a snippet from a selection opens exactly that snippet.
-- [ ] Import from espanso: dates, clipboard, forms and formatted text arrive; scripts and regex triggers are listed as not imported; espanso's files are unchanged.
+- [ ] Snippet inside a snippet: insert the signature into a letter with **🧩 Snippet**; the preview shows it; changing and saving the signature changes the letter's expansion in Word/Outlook (formatted) and Notepad (plain). An included snippet with a form field asks for it once; a switched-off included snippet still works; deleting the signature warns that the letter uses it.
+- [ ] Import from espanso: dates, clipboard, forms, nested matches and formatted text arrive; scripts and regex triggers are listed as not imported; espanso's files are unchanged.
 
 ## 8. Safety and privacy
 

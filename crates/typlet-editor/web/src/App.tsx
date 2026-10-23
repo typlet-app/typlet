@@ -11,6 +11,7 @@ import { SettingsPage } from "./components/SettingsPage";
 import { Sidebar } from "./components/Sidebar";
 import { normalised, SnippetEditor, type Draft } from "./editor/SnippetEditor";
 import { LangContext, translate, type Key, type Lang } from "./i18n";
+import { usersOf } from "./nesting";
 import type { AppInfo, LibraryView, Settings } from "./types";
 import { uuidv7 } from "./uuid";
 
@@ -44,6 +45,7 @@ export function App() {
   const lang: Lang =
     settings.language === "system" ? (info?.system_german ? "de" : "en") : settings.language;
   const t = useCallback((key: Key, vars?: Record<string, string | number>) => translate(lang, key, vars), [lang]);
+  const allSnippets = useMemo(() => (library?.snippets ?? []).map((s) => s.snippet), [library]);
   const dirty = draft !== null && snapshot(draft) !== saved;
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
@@ -194,7 +196,14 @@ export function App() {
 
   const remove = async () => {
     if (!draft) return;
-    const confirmed = await ask(t("delete_confirm", { label: draft.snippet.label || draft.snippet.trigger }), {
+    const label = draft.snippet.label || draft.snippet.trigger;
+    // Snippets that include this one would lose that part.
+    const users = usersOf(allSnippets, draft.snippet.id).map((s) => s.trigger);
+    const question =
+      users.length > 0
+        ? t("delete_confirm_used", { label, users: users.join(", ") })
+        : t("delete_confirm", { label });
+    const confirmed = await ask(question, {
       title: "Typlet",
       kind: "warning",
     });
@@ -268,7 +277,9 @@ export function App() {
               error={error}
               others={others}
               categories={categories}
+              library={allSnippets}
               onChange={setDraft}
+              onOpenSnippet={(id) => void openSnippet(id)}
               onSave={() => void save()}
               onDelete={() => void remove()}
               onDuplicate={duplicate}

@@ -6,7 +6,7 @@ The editor of [Typlet](../../README.md): a window for creating and editing snipp
 |---|---|---|
 | Commands | `src/commands.rs` | All file access through `typlet-core`: load and save snippets by id, delete, validate, preview with the real renderer, settings, espanso import |
 | Window | `src/main.rs` | Single instance (a second start focuses the window and passes `--open <id>` / `--settings`), starts the background program if needed, holds the editor-focus lock |
-| Interface | `web/src` | Snippet list, rich-text editor with placeholder chips, form fields, preview, settings, import |
+| Interface | `web/src` | Snippet list, rich-text editor with placeholder chips (including other snippets), form fields, preview, settings, import |
 | Conversion | `web/src/convert.ts` | Typlet document ⇄ Tiptap JSON, tested against every documented example |
 | Texts | `web/src/i18n/{en,de}.json` | English and German |
 

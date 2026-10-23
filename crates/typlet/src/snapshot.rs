@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use typlet_core::{Conflict, Library, SearchIndex, Snippet, SnippetId, find_conflicts};
+use typlet_core::{Conflict, Library, SearchIndex, Snippet, SnippetId, find_conflicts, nesting};
 
 /// The library as loaded at one point in time.
 #[derive(Debug, Default)]
@@ -34,6 +34,7 @@ impl Snapshot {
         let mut issues: Vec<String> = report.errors.iter().map(ToString::to_string).collect();
         let snippets: Vec<Snippet> = report.snippets.into_iter().map(|s| s.snippet).collect();
         issues.extend(describe_conflicts(&snippets));
+        issues.extend(describe_nesting(&snippets));
         Self::from_parts(root.to_path_buf(), snippets, issues, broken_files)
     }
 
@@ -98,6 +99,18 @@ fn describe_conflicts(snippets: &[Snippet]) -> Vec<String> {
                 label(shadowed),
                 label(by)
             ),
+        })
+        .collect()
+}
+
+/// Snippets that include missing snippets or each other in a loop.
+fn describe_nesting(snippets: &[Snippet]) -> Vec<String> {
+    snippets
+        .iter()
+        .filter_map(|snippet| {
+            nesting::check(snippet, snippets)
+                .err()
+                .map(|error| format!("{} ({}): {error}", snippet.trigger, snippet.label))
         })
         .collect()
 }

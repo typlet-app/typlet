@@ -8,11 +8,13 @@ import { api, errorText } from "../api";
 import { blocksSaving, triggerIssues, type TriggerIssue } from "../conflicts";
 import { fromTiptap, hasCursor, NODE, toTiptap, usedFields } from "../convert";
 import { useT, type Key } from "../i18n";
+import { includable } from "../nesting";
 import type { FieldDef, InsertMode, Preview, Snippet } from "../types";
-import { extensions, FieldsContext } from "./extensions";
+import { extensions, FieldsContext, SnippetsContext } from "./extensions";
 import { FieldsPanel } from "./FieldsPanel";
 import { HotkeyInput } from "../components/HotkeyInput";
 import { Inspector } from "./Inspector";
+import { SnippetPicker } from "./SnippetPicker";
 import { Toolbar } from "./Toolbar";
 
 export interface Draft {
@@ -28,7 +30,10 @@ interface Props {
   /** Enabled triggers of all other snippets, with their labels. */
   others: Map<string, string>;
   categories: string[];
+  /** All saved snippets, for including one in another. */
+  library: Snippet[];
   onChange: (draft: Draft) => void;
+  onOpenSnippet: (id: string) => void;
   onSave: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -61,6 +66,7 @@ export function SnippetEditor(props: Props) {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [picking, setPicking] = useState(false);
   const latest = useRef(draft);
   latest.current = draft;
 
@@ -94,6 +100,12 @@ export function SnippetEditor(props: Props) {
     }, 250);
     return () => window.clearTimeout(timer);
   }, [snippet]);
+
+  const candidates = useMemo(() => includable(props.library, snippet), [props.library, snippet]);
+  const insertSnippet = (id: string) => {
+    setPicking(false);
+    editor?.chain().focus().insertContent({ type: NODE.snippet, attrs: { id } }).run();
+  };
 
   const issues = triggerIssues(snippet.trigger, props.others);
   const blocking = issues.some(blocksSaving);
@@ -143,6 +155,7 @@ export function SnippetEditor(props: Props) {
 
   return (
     <FieldsContext.Provider value={fields}>
+    <SnippetsContext.Provider value={props.library}>
       <form
         className="snippet-editor"
         onSubmit={(event) => {
@@ -226,7 +239,24 @@ export function SnippetEditor(props: Props) {
 
         {editor && (
           <div className="text-editor">
-            <Toolbar editor={editor} hasCursor={cursorUsed} onAddField={addField} onLink={openLink} />
+            <Toolbar
+              editor={editor}
+              hasCursor={cursorUsed}
+              picking={picking}
+              onAddField={addField}
+              onAddSnippet={() => setPicking(!picking)}
+              onLink={openLink}
+            />
+            {picking && (
+              <SnippetPicker
+                candidates={candidates}
+                onPick={insertSnippet}
+                onClose={() => {
+                  setPicking(false);
+                  editor.commands.focus();
+                }}
+              />
+            )}
             {link !== null && (
               <div className="inspector" role="group" aria-label={t("link")}>
                 <label className="grow">
@@ -253,7 +283,15 @@ export function SnippetEditor(props: Props) {
                 </button>
               </div>
             )}
-            <Inspector editor={editor} fields={fields} />
+            {!picking && (
+              <Inspector
+                editor={editor}
+                fields={fields}
+                includable={candidates}
+                snippets={props.library}
+                onOpenSnippet={props.onOpenSnippet}
+              />
+            )}
             <EditorContent editor={editor} className="text-area" />
           </div>
         )}
@@ -306,6 +344,7 @@ export function SnippetEditor(props: Props) {
           )}
         </section>
       </form>
+    </SnippetsContext.Provider>
     </FieldsContext.Provider>
   );
 }

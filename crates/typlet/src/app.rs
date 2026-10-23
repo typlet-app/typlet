@@ -12,7 +12,7 @@ use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use typlet_core::snippet::validate_trigger;
 use typlet_core::{
     DateLanguage, Document, FieldKind as CoreFieldKind, Hotkey, Language, Library, RenderContext,
-    Settings, Snippet, SnippetId, ValidationError, render,
+    Settings, Snippet, SnippetId, ValidationError, nesting, render,
 };
 use typlet_platform::paths::Paths;
 use typlet_platform::{Platform, autostart};
@@ -667,8 +667,11 @@ impl App {
                     id: snippet.id.to_string().into(),
                     trigger: snippet.trigger.as_str().into(),
                     label: snippet.label.as_str().into(),
-                    preview: snippet.content.preview(90, now, language).into(),
-                    has_form: !snippet.fields.is_empty(),
+                    preview: snippet
+                        .content
+                        .preview(90, now, language, &library.snippets)
+                        .into(),
+                    has_form: !nesting::form_fields(snippet, &library.snippets).is_empty(),
                 }
             })
             .collect();
@@ -690,7 +693,7 @@ impl App {
             return;
         };
         self.hide_window(self.windows.search.window());
-        if snippet.fields.is_empty() {
+        if nesting::form_fields(snippet, &library.snippets).is_empty() {
             self.send(Command::Insert {
                 id: snippet.id,
                 fields: HashMap::new(),
@@ -712,8 +715,9 @@ impl App {
         let form = &self.windows.form;
         let yes = form.get_yes_word().to_string();
         let no = form.get_no_word().to_string();
-        let rows: Vec<FormField> = snippet
-            .fields
+        // The snippet's fields and those of the snippets it includes.
+        let fields = nesting::form_fields(snippet, &library.snippets);
+        let rows: Vec<FormField> = fields
             .iter()
             .map(|field| {
                 let default = field.default.clone().unwrap_or_default();
@@ -753,7 +757,7 @@ impl App {
         self.form_fields.set_vec(rows);
         *self.form.borrow_mut() = Some(FormState {
             id,
-            names: snippet.fields.iter().map(|f| f.name.clone()).collect(),
+            names: fields.iter().map(|f| f.name.clone()).collect(),
         });
         form.set_snippet_label(snippet.label.as_str().into());
         form.set_trigger(snippet.trigger.as_str().into());
@@ -831,6 +835,7 @@ impl App {
                 40,
                 chrono::Local::now().naive_local(),
                 self.date_language(),
+                &[],
             );
         }
         let snippet = Snippet::new(trigger, label, Document::from_plain_text(&text));
@@ -884,10 +889,11 @@ impl App {
             .iter()
             .find(|s| s.enabled && s.trigger == example.trigger)
             .or_else(|| {
-                library
-                    .snippets
-                    .iter()
-                    .find(|s| s.enabled && s.fields.is_empty() && !s.content.uses_clipboard())
+                library.snippets.iter().find(|s| {
+                    s.enabled
+                        && nesting::form_fields(s, &library.snippets).is_empty()
+                        && !nesting::uses_clipboard(s, &library.snippets)
+                })
             });
         let Some(snippet) = candidate else {
             return (String::new(), String::new());
@@ -898,6 +904,7 @@ impl App {
             clipboard: None,
             fields: &fields,
             date_language: self.date_language(),
+            snippets: &library.snippets,
         };
         let expected = render(snippet, &context)
             .map(|rendered| rendered.plain.lines().next().unwrap_or_default().to_owned())

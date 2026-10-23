@@ -13,6 +13,7 @@
 //! | `clipboard` variable | clipboard placeholder |
 //! | `echo` variable | fixed text |
 //! | `choice` variable, `form`, `form` variable | form fields |
+//! | `match` variable (nested match) | included snippet |
 //! | `label` | name |
 //! | `global_vars` | resolved in every file |
 //!
@@ -25,7 +26,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
-use typlet_core::{FieldDef, FieldKind, Inline, Snippet};
+use typlet_core::{FieldDef, FieldKind, Inline, NestingError, Snippet, SnippetId, nesting};
 
 use crate::rich::{self, DocBuilder, Placeholder};
 use crate::{ImportReport, Imported, SkipReason, Skipped, Warning};
@@ -75,6 +76,7 @@ struct Params {
     layout: Option<String>,
     fields: HashMap<String, FieldSpec>,
     values: Option<Values>,
+    trigger: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize)]
@@ -145,6 +147,7 @@ pub fn parse_file(text: &str, source: &str) -> ImportReport {
         }
         Err(error) => report.skipped.push(unreadable(source, &error.to_string())),
     }
+    link(&mut report);
     report
 }
 
@@ -187,7 +190,63 @@ pub fn import_dir(dir: &Path) -> ImportReport {
     for (source, file) in &files {
         convert_file(file, source, &globals, &mut report);
     }
+    link(&mut report);
     report
+}
+
+/// Points nested matches (`type: match`) to the snippets imported for their
+/// triggers. Snippets whose nested match is missing, or that include each
+/// other in a loop, are skipped, and so are the snippets that include them.
+fn link(report: &mut ImportReport) {
+    let includes = std::mem::take(&mut report.includes);
+    // If several files define a trigger, the first one counts (like the
+    // editor, which keeps the first and reports the others as existing).
+    let mut ids: HashMap<&str, SnippetId> = HashMap::new();
+    for item in &report.imported {
+        ids.entry(item.snippet.trigger.as_str())
+            .or_insert(item.snippet.id);
+    }
+    // Placeholders of missing matches keep their id; `triggers` names them.
+    let mut triggers: HashMap<SnippetId, String> = HashMap::new();
+    let mut targets = HashMap::new();
+    for (placeholder, trigger) in includes {
+        let target = ids.get(trigger.as_str()).copied().unwrap_or(placeholder);
+        targets.insert(placeholder, target);
+        triggers.insert(target, trigger);
+    }
+    for item in &mut report.imported {
+        nesting::relink(&mut item.snippet.content, &targets);
+    }
+
+    // Skipping one snippet can break the ones that include it; repeat
+    // until every remaining snippet is complete.
+    loop {
+        let snippets: Vec<Snippet> = report.imported.iter().map(|i| i.snippet.clone()).collect();
+        let broken = snippets.iter().enumerate().find_map(|(index, snippet)| {
+            nesting::check(snippet, &snippets)
+                .err()
+                .map(|error| (index, error))
+        });
+        let Some((index, error)) = broken else {
+            break;
+        };
+        let item = report.imported.remove(index);
+        let reason = match error {
+            NestingError::Missing(id) => SkipReason::MissingMatch(
+                triggers
+                    .get(&id)
+                    .cloned()
+                    .or_else(|| nesting::find(&snippets, id).map(|s| s.trigger.clone()))
+                    .unwrap_or_default(),
+            ),
+            other => SkipReason::Invalid(other.to_string()),
+        };
+        report.skipped.push(Skipped {
+            source: item.source,
+            trigger: item.snippet.trigger,
+            reason,
+        });
+    }
 }
 
 fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -244,12 +303,15 @@ fn convert_file(file: &MatchFile, source: &str, globals: &[Var], report: &mut Im
         }
         for trigger in triggers {
             match convert_match(entry, trigger, globals) {
-                Ok((snippet, warnings)) => report.imported.push(Imported {
-                    snippet,
-                    source: source.to_owned(),
-                    category: category(source),
-                    warnings,
-                }),
+                Ok((snippet, warnings, includes)) => {
+                    report.includes.extend(includes);
+                    report.imported.push(Imported {
+                        snippet,
+                        source: source.to_owned(),
+                        category: category(source),
+                        warnings,
+                    });
+                }
                 Err(reason) => report.skipped.push(Skipped {
                     source: source.to_owned(),
                     trigger: trigger.clone(),
@@ -260,11 +322,11 @@ fn convert_file(file: &MatchFile, source: &str, globals: &[Var], report: &mut Im
     }
 }
 
-fn convert_match(
-    entry: &Match,
-    trigger: &str,
-    globals: &[Var],
-) -> Result<(Snippet, Vec<Warning>), SkipReason> {
+/// A converted match: the snippet, what was not carried over exactly, and
+/// the nested matches it includes (placeholder id → trigger).
+type Converted = (Snippet, Vec<Warning>, Vec<(SnippetId, String)>);
+
+fn convert_match(entry: &Match, trigger: &str, globals: &[Var]) -> Result<Converted, SkipReason> {
     if entry.image_path.is_some() {
         return Err(SkipReason::Image);
     }
@@ -277,6 +339,7 @@ fn convert_match(
     vars.extend(entry.vars.iter().map(|v| (v.name.as_str(), v)));
 
     let fields: RefCell<Vec<FieldDef>> = RefCell::new(Vec::new());
+    let includes: RefCell<Vec<(SnippetId, String)>> = RefCell::new(Vec::new());
     let rounded = Cell::new(false);
     let resolve = |name: &str| -> Result<Placeholder, SkipReason> {
         if let Some((form, field)) = name.split_once('.') {
@@ -319,6 +382,18 @@ fn convert_match(
                 };
                 add_field(&fields, name, Some(&spec));
                 Ok(Placeholder::Field(name.to_owned()))
+            }
+            "match" => {
+                let included = var
+                    .params
+                    .trigger
+                    .clone()
+                    .filter(|t| !t.is_empty())
+                    .ok_or_else(|| SkipReason::UnsupportedVariable("match".to_owned()))?;
+                // Linked to the imported snippet once every file is read.
+                let placeholder = SnippetId::new();
+                includes.borrow_mut().push((placeholder, included));
+                Ok(Placeholder::Snippet(placeholder))
             }
             other => Err(SkipReason::UnsupportedVariable(other.to_owned())),
         }
@@ -377,7 +452,7 @@ fn convert_match(
     if rounded.get() {
         warnings.push(Warning::OffsetRounded);
     }
-    Ok((snippet, warnings))
+    Ok((snippet, warnings, includes.into_inner()))
 }
 
 fn add_field(fields: &RefCell<Vec<FieldDef>>, name: &str, spec: Option<&FieldSpec>) {
@@ -652,5 +727,74 @@ matches:
         let yaml = "matches:\n  - trigger: ':soon'\n    replace: '{{d}}'\n    vars:\n      - name: d\n        type: date\n        params:\n          format: '%H:%M'\n          offset: 3600\n";
         let report = parse_file(yaml, "x.yml");
         assert_eq!(report.imported[0].warnings, [Warning::OffsetRounded]);
+    }
+
+    fn nested(name: &str, target: &str) -> String {
+        format!(
+            "    vars:\n      - name: {name}\n        type: match\n        params:\n          trigger: '{target}'\n"
+        )
+    }
+
+    #[test]
+    fn nested_matches_become_included_snippets() {
+        let dir = tempfile::tempdir().unwrap();
+        let matches = dir.path().join("match");
+        fs::create_dir_all(&matches).unwrap();
+        fs::write(
+            matches.join("a.yml"),
+            format!(
+                "matches:\n  - trigger: ':mail'\n    replace: 'Hallo {{{{sig}}}}'\n{}",
+                nested("sig", ":sig")
+            ),
+        )
+        .unwrap();
+        fs::write(
+            matches.join("b.yml"),
+            "matches:\n  - trigger: ':sig'\n    replace: 'Anna'\n",
+        )
+        .unwrap();
+
+        let report = import_dir(dir.path());
+        assert!(report.skipped.is_empty(), "{:?}", report.skipped);
+        let mail = &report.imported[0].snippet;
+        let sig = &report.imported[1].snippet;
+        assert_eq!(sig.trigger, ":sig");
+        assert_eq!(
+            nesting::included_ids(&mail.content).collect::<Vec<_>>(),
+            vec![sig.id]
+        );
+        assert_eq!(nesting::check(mail, std::slice::from_ref(sig)), Ok(()));
+    }
+
+    #[test]
+    fn missing_and_looping_nested_matches_are_skipped() {
+        let yaml = format!(
+            "matches:\n  - trigger: ':a'\n    replace: '{{{{x}}}}'\n{}  - trigger: ':b'\n    replace: 'b {{{{x}}}}'\n{}  - trigger: ':c'\n    replace: '{{{{x}}}}'\n{}  - trigger: ':d'\n    replace: '{{{{x}}}}'\n{}  - trigger: ':ok'\n    replace: fine\n",
+            nested("x", ":gone"),
+            nested("x", ":a"),
+            nested("x", ":d"),
+            nested("x", ":c"),
+        );
+        let report = parse_file(&yaml, "x.yml");
+        let imported: Vec<&str> = report
+            .imported
+            .iter()
+            .map(|i| i.snippet.trigger.as_str())
+            .collect();
+        assert_eq!(imported, [":ok"]);
+        let skipped: Vec<(&str, &SkipReason)> = report
+            .skipped
+            .iter()
+            .map(|s| (s.trigger.as_str(), &s.reason))
+            .collect();
+        // `:a` includes a match that does not exist; `:b` includes `:a`;
+        // `:c` and `:d` include each other.
+        assert_eq!(
+            skipped[0],
+            (":a", &SkipReason::MissingMatch(":gone".into()))
+        );
+        assert_eq!(skipped[1], (":b", &SkipReason::MissingMatch(":a".into())));
+        assert!(matches!(skipped[2].1, SkipReason::Invalid(_)));
+        assert_eq!(skipped.len(), 4);
     }
 }
