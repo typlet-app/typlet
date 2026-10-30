@@ -45,7 +45,7 @@ tauri-build = { version = "2.5", features = [] }
 [dev-dependencies]
 tempfile.workspace = true
 # The updater's own signature libraries, to test the release key (tests/updater_key.rs).
-base64 = "0.22"
+base64 = "0.23"
 minisign-verify = "0.3"
 
 [features]
